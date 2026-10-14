@@ -81,6 +81,13 @@ input:focus,select:focus{outline:2px solid var(--amber);outline-offset:1px}
 header{flex-direction:column;align-items:stretch}
 .logo{display:block;width:100%;height:auto;background:#000;border-radius:14px}
 .ajuda-btn{align-self:flex-end}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;padding:13px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;font:600 16px Archivo,sans-serif;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chk{display:flex;align-items:center;gap:10px;font-size:16px;color:var(--ink);margin:16px 0 0}
+.chk input{width:26px;height:26px;padding:0;flex:none;-webkit-appearance:auto;appearance:auto}
+.dica{font-size:14px;color:var(--mute);margin:10px 2px 0;min-height:18px}
+small{font-weight:400}
 .status{font-size:13px;border-radius:10px;padding:8px 12px;margin:0 0 10px;line-height:1.4}
 .status.ok{color:var(--green);background:var(--green-bg)}
 .status.falha{color:#fff;background:#B3412E;font-weight:600}
@@ -133,9 +140,16 @@ header{flex-direction:column;align-items:stretch}
       </div>
       <datalist id="listaCias"></datalist>
       <div class="grid2">
-        <div><label for="sValor">Valor do serviço (R$)</label><input id="sValor" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00"></div>
+        <div><label for="sValor">Valor do serviço (R$) <small>(opcional)</small></label><input id="sValor" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00"></div>
         <div><label for="sDesp">Despesa (R$)</label><input id="sDesp" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00"></div>
       </div>
+      <label>Despesa paga com</label>
+      <div class="seg" id="segPago">
+        <button type="button" data-pago="Caixa" aria-pressed="false">Caixa</button>
+        <button type="button" data-pago="Cartão" aria-pressed="false">Cartão</button>
+      </div>
+      <label class="chk" id="boxRecebi" hidden><input type="checkbox" id="sRecebi"> Recebi o valor deste serviço (entra no Caixa)</label>
+      <p class="dica" id="dicaCaixa" role="status"></p>
       <div class="preview">
         <span>Comissão de 30% sobre valor menos despesa</span>
         <b class="big" id="prevCom">R$ 0,00</b>
@@ -415,6 +429,7 @@ let servicos = [], caixa = [];
 
 const renderServico = x => {
   const temValor = (x.valor || 0) > 0;
+  const temDesp = (x.despesa || 0) > 0;
   const com = comissaoDe(x.valor, x.despesa);
   return `
   <div class="card">
@@ -423,11 +438,12 @@ const renderServico = x => {
     <div class="sub">${esc(x.saida) || '?'} → ${esc(x.destino) || '?'}</div>
     ${(x.tipo || x.cia) ? `<div class="sub"><b>${esc(x.tipo)}</b>${x.cia ? ' · ' + esc(x.cia) : ''}</div>` : ''}
     ${x.obs ? `<div class="sub">${esc(x.obs)}</div>` : ''}
-    ${temValor ? `<div class="linha-valores">
-        <div><span>Valor </span><b>${fmt(x.valor)}</b></div>
-        <div><span>Despesa </span><b>${fmt(x.despesa || 0)}</b></div>
-        <div><span>Comissão </span><b class="com">${fmt(com)}</b></div>
+    ${(temValor || temDesp || !ehBase(x.id)) ? `<div class="linha-valores">
+        <div><span>Valor </span><b>${temValor ? fmt(x.valor) : 'a definir'}</b></div>
+        ${temDesp ? `<div><span>Despesa </span><b>${fmt(x.despesa)}${x.pagoCom ? ' · ' + esc(x.pagoCom) : ''}</b></div>` : ''}
+        ${temValor ? `<div><span>Comissão </span><b class="com">${fmt(com)}</b></div>` : ''}
       </div>` : ''}
+    ${x.recebido ? '<div class="sub">Recebido · entrou no Caixa</div>' : ''}
     <div class="acoes"><button class="btn mini sec" data-editar="${esc(x.id)}" type="button">Editar</button></div>
   </div>`;
 };
@@ -451,9 +467,32 @@ const elSDesp = document.getElementById('sDesp');
 const CAMPOS_S = ['sData','sMarca','sVeic','sSaida','sDest','sTipo','sCia','sValor','sDesp','sObs'];
 let editandoId = null;
 let confirmaExclusao = false;
+let pagoCom = '';
+const ehBase = id => /^p\d+$/.test(String(id));
 
+function atualizaSeg(){
+  document.querySelectorAll('#segPago button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pago === pagoCom)));
+}
+document.getElementById('segPago').addEventListener('click', e => {
+  const b = e.target.closest('button[data-pago]');
+  if (!b) return;
+  pagoCom = (pagoCom === b.dataset.pago) ? '' : b.dataset.pago;
+  atualizaSeg(); atualizaDica();
+});
+function atualizaDica(){
+  const valor = num(elSValor.value), desp = num(elSDesp.value);
+  const rec = elTipo.value === 'Particular' && document.getElementById('sRecebi').checked && valor > 0;
+  const p = [];
+  if (rec) p.push(`entra ${fmt(valor)}`);
+  if (desp > 0 && pagoCom === 'Caixa') p.push(`sai ${fmt(desp)}`);
+  let t = p.length ? 'No Caixa: ' + p.join(' e ') + '.' : '';
+  if (desp > 0 && pagoCom === 'Cartão') t = (t ? t + ' ' : '') + 'A despesa no cartão não mexe no Caixa.';
+  document.getElementById('dicaCaixa').textContent = t;
+}
 function atualizaPrevia(){
-  document.getElementById('prevCom').textContent = fmt(comissaoDe(num(elSValor.value), num(elSDesp.value)));
+  const valor = num(elSValor.value);
+  document.getElementById('prevCom').textContent = valor > 0 ? fmt(comissaoDe(valor, num(elSDesp.value))) : 'a definir';
+  atualizaDica();
 }
 elSValor.addEventListener('input', atualizaPrevia);
 elSDesp.addEventListener('input', atualizaPrevia);
@@ -464,8 +503,15 @@ function ajustaCia(){
   const part = elTipo.value === 'Particular';
   if (part) elCia.value = '';
   elCia.disabled = part;
+  document.getElementById('boxRecebi').hidden = !part;
+  if (!part) document.getElementById('sRecebi').checked = false;
 }
-elTipo.addEventListener('change', ajustaCia);
+elTipo.addEventListener('change', () => {
+  ajustaCia();
+  if (elTipo.value === 'Particular' && editandoId === null) document.getElementById('sRecebi').checked = true;
+  atualizaPrevia();
+});
+document.getElementById('sRecebi').addEventListener('change', atualizaDica);
 
 function atualizaCias(){
   const set = new Set();
@@ -482,14 +528,17 @@ function abreForm(servico){
     sValor: servico?.valor || '', sDesp: servico?.despesa || '', sObs: servico?.obs || ''
   };
   CAMPOS_S.forEach(id => document.getElementById(id).value = v[id]);
+  pagoCom = servico?.pagoCom || '';
+  document.getElementById('sRecebi').checked = !!servico?.recebido;
+  atualizaSeg();
   document.getElementById('tituloFormS').textContent = servico ? 'Editar serviço' : 'Novo serviço';
   document.getElementById('salvaS').textContent = servico ? 'Salvar alterações' : 'Salvar serviço';
   document.getElementById('excluiS').hidden = !servico;
   document.getElementById('excluiS').textContent = 'Excluir serviço';
   mostra(document.getElementById('msgS'), '', false);
   formS.hidden = false;
-  atualizaPrevia();
   ajustaCia();
+  atualizaPrevia();
   formS.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 function fechaForm(){ formS.hidden = true; editandoId = null; confirmaExclusao = false; }
@@ -512,9 +561,11 @@ document.getElementById('salvaS').addEventListener('click', () => {
   const veiculo = v('sVeic'), marca = v('sMarca');
   const valor = num(v('sValor')), despesa = num(v('sDesp'));
   if (!veiculo && !marca) { mostra(msg, 'Informe pelo menos a marca ou o veículo.', true); return; }
-  if (valor <= 0) { mostra(msg, 'Informe o valor do serviço.', true); return; }
-  if (despesa > valor) { mostra(msg, 'A despesa é maior que o valor. Confira os dois campos.', true); return; }
-  const dados = {data: v('sData') || null, marca, veiculo, saida: v('sSaida'), destino: v('sDest'), obs: v('sObs'), tipo: v('sTipo'), cia: v('sTipo') === 'Seguro' ? v('sCia') : '', valor, despesa};
+  const marcouRecebi = v('sTipo') === 'Particular' && document.getElementById('sRecebi').checked;
+  if (valor > 0 && despesa > valor) { mostra(msg, 'A despesa é maior que o valor. Confira os dois campos.', true); return; }
+  if (despesa > 0 && !pagoCom) { mostra(msg, 'Escolha se a despesa saiu do Caixa ou do Cartão.', true); return; }
+  if (marcouRecebi && valor <= 0) { mostra(msg, 'Informe o valor para lançar o recebimento no Caixa, ou desmarque a opção.', true); return; }
+  const dados = {data: v('sData') || null, marca, veiculo, saida: v('sSaida'), destino: v('sDest'), obs: v('sObs'), tipo: v('sTipo'), cia: v('sTipo') === 'Seguro' ? v('sCia') : '', valor, despesa, pagoCom: despesa > 0 ? pagoCom : '', recebido: marcouRecebi && valor > 0};
 
   if (editandoId === null) {
     const id = novoId();
@@ -558,10 +609,14 @@ document.getElementById('excluiS').addEventListener('click', () => {
 function renderComissoes(){
   const grupos = {};
   servicosAtuais().forEach(x => {
-    if (!x.data || !(x.valor > 0)) return;
+    if (!x.data) return;
+    const tem = x.valor > 0;
+    if (!tem && ehBase(x.id)) return;
     const q = quinzenaDe(x.data);
-    const g = grupos[q] || (grupos[q] = {q, qtd: 0, valor: 0, despesa: 0, com: 0});
-    g.qtd++; g.valor += x.valor; g.despesa += (x.despesa || 0); g.com += comissaoDe(x.valor, x.despesa);
+    const g = grupos[q] || (grupos[q] = {q, qtd: 0, valor: 0, despesa: 0, com: 0, sem: 0});
+    g.qtd++;
+    if (tem) { g.valor += x.valor; g.despesa += (x.despesa || 0); g.com += comissaoDe(x.valor, x.despesa); }
+    else g.sem++;
   });
   const lista = Object.values(grupos).sort((a, b) => b.q.localeCompare(a.q));
   let pend = 0, rec = 0;
@@ -581,6 +636,7 @@ function renderComissoes(){
         <div><span>Despesa </span><b>${fmt(g.despesa)}</b></div>
         <div><span>Comissão </span><b class="com">${fmt(g.com)}</b></div>
       </div>
+      ${g.sem ? `<div class="sub" style="margin-top:8px">${plural(g.sem, 'serviço ainda sem valor', 'serviços ainda sem valor')}: ${g.sem === 1 ? 'não entra' : 'não entram'} na comissão até você informar o valor.</div>` : ''}
       <div class="acoes">
         <button class="btn mini ${pago ? 'ok' : 'pend'}" data-quinzena="${g.q}" type="button">${pago ? 'Recebida ✓' : 'Marcar como recebida'}</button>
         <button class="btn mini sec" data-relatorio="${g.q}" type="button">Relatório</button>
@@ -795,6 +851,15 @@ document.getElementById('resMes').addEventListener('click', () => defineResumo(p
 document.getElementById('resMesAnt').addEventListener('click', () => defineResumo(periodoMes(-1)));
 
 /* ---------- caixa ---------- */
+function caixaAuto(){
+  const out = [];
+  servicosAtuais().forEach(x => {
+    const nome = `${x.marca || ''} ${x.veiculo || ''}`.trim() + ((x.saida || x.destino) ? ` (${x.saida || '?'} → ${x.destino || '?'})` : '');
+    if (x.recebido && x.valor > 0) out.push({id: 'auto-e-' + x.id, data: x.data || null, desc: 'Recebimento: ' + nome, entrada: x.valor, saida: null, auto: true});
+    if (x.despesa > 0 && x.pagoCom === 'Caixa') out.push({id: 'auto-s-' + x.id, data: x.data || null, desc: 'Despesa: ' + nome, entrada: null, saida: x.despesa, auto: true});
+  });
+  return out;
+}
 const renderCaixa = x => {
   const entrou = (x.entrada || 0) > 0;
   const valor = entrou ? x.entrada : (x.saida || 0);
@@ -802,6 +867,7 @@ const renderCaixa = x => {
   <div class="card">
     <div class="top"><span>${dt(x.data)}</span></div>
     <div class="title">${esc(x.desc) || 'Sem descrição'}</div>
+    ${x.auto ? '<div class="sub">Lançado automaticamente pelo serviço. Para mudar, edite o serviço.</div>' : ''}
     <div class="val ${entrou ? 'in' : 'out'}">${entrou ? '+ ' : '− '}${fmt(valor)}</div>
   </div>`;
 };
@@ -840,7 +906,7 @@ document.getElementById('salvaC').addEventListener('click', () => {
 /* ---------- recálculo geral ---------- */
 function recalcular(){
   servicos = servicosAtuais().sort(byDataDesc);
-  caixa = [...BASE.caixa, ...NOVOS.caixa].sort(byDataDesc);
+  caixa = [...BASE.caixa, ...NOVOS.caixa, ...caixaAuto()].sort(byDataDesc);
   const ent = caixa.reduce((s, x) => s + (x.entrada || 0), 0);
   const sai = caixa.reduce((s, x) => s + (x.saida || 0), 0);
   document.getElementById('tEnt').textContent = fmt(ent);
