@@ -378,10 +378,33 @@ const IDB = {
   }); }
 };
 
+/* Marcações antigas por quinzena viram recebimentos por período, valendo só até 18/10/2026.
+   A partir de 19/10 tudo começa em aberto. */
+const FIM_LEGADO = '2026-10-18';
+function migraLegado(){
+  const chaves = Object.keys(NOVOS.recebidos || {});
+  if (!chaves.length) return false;
+  const jaPagos = new Set();
+  NOVOS.pagamentos.forEach(p => p.ids.forEach(id => jaPagos.add(id)));
+  const todos = servicosAtuais();
+  chaves.forEach(q => {
+    const f = faixaQuinzena(q);
+    if (f.de > FIM_LEGADO) return;
+    const ate = f.ate < FIM_LEGADO ? f.ate : FIM_LEGADO;
+    const ids = todos.filter(x => x.data && x.valor > 0 && x.data >= f.de && x.data <= ate && !jaPagos.has(x.id)).map(x => x.id);
+    if (ids.length) {
+      NOVOS.pagamentos.push({id: 'leg-' + q, de: f.de, ate, ids, criadoEm: hoje()});
+      ids.forEach(id => jaPagos.add(id));
+    }
+  });
+  NOVOS.recebidos = {};
+  return true;
+}
+
 function carregaLocal(){
   try {
     const v = JSON.parse(localStorage.getItem(CHAVE)) || JSON.parse(localStorage.getItem('guincho-novos-v2'));
-    if (valido(v)) NOVOS = normaliza(v);
+    if (valido(v)) { NOVOS = normaliza(v); migraLegado(); }
   } catch (e) { /* sem localStorage: tenta o IndexedDB logo depois */ }
 }
 
@@ -420,7 +443,7 @@ async function iniciaArmazenamento(){
   if (estado.idb) {
     try {
       const v = await IDB.get(CHAVE);
-      if (valido(v) && (v.salvoEm || 0) > (NOVOS.salvoEm || 0)) { NOVOS = normaliza(v); recalcular(); }
+      if (valido(v) && (v.salvoEm || 0) > (NOVOS.salvoEm || 0)) { NOVOS = normaliza(v); migraLegado(); recalcular(); }
     } catch (e) { /* segue com o que já foi lido */ }
   }
   if (estado.ls || estado.idb) gravaLocal(true);   /* deixa as duas gavetas iguais */
@@ -649,8 +672,7 @@ document.getElementById('excluiS').addEventListener('click', () => {
 /* ---------- comissões: recebimento por período ---------- */
 let MAPA_PAGOS = new Map();
 const montaMapaPagos = () => { const m = new Map(); NOVOS.pagamentos.forEach(p => p.ids.forEach(id => m.set(id, p))); return m; };
-/* a marcação antiga por quinzena continua valendo para os serviços dela */
-const estaPago = (x, mapa) => mapa.has(x.id) || (!!x.data && !!NOVOS.recebidos[quinzenaDe(x.data)]);
+const estaPago = (x, mapa) => mapa.has(x.id);
 const comDe = x => comissaoDe(x.valor, x.despesa);
 let pgTocado = false;
 const elPgDe = document.getElementById('pgDe'), elPgAte = document.getElementById('pgAte');
@@ -1262,6 +1284,7 @@ function importarDados(dados){
   if (dados.recebidos) Object.keys(dados.recebidos).forEach(k => NOVOS.recebidos[k] = true);
   if (dados.ajustes) Object.assign(NOVOS.ajustes, dados.ajustes);
   if (Array.isArray(dados.pagamentos)) dados.pagamentos.forEach(p => { if (p && Array.isArray(p.ids) && !NOVOS.pagamentos.some(q => q.id === p.id)) { NOVOS.pagamentos.push(p); adicionados++; } });
+  migraLegado();
   gravaLocal();
   recalcular();
   return adicionados;
