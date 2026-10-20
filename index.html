@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Guincho">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAEB0lEQVR4nO3c0XHaWhSGUSdzu0grLswl3DpSyy0khfghD8xwGcyPhcQ5e0us9ehk0EH+vCUh4Mef37/e4Jaf1QugL3EQiYNIHETiIBIHkTiIxEEkDiJxEImDSBxE4iASB5E4iMRBJA4icRCJg0gcROIgEgeROIjEQSQOInEQiYNIHETiIBIHkTiIxEEkDiJxEImDSBxE4iASB5E4iMRBJA4icRCJg0gcROIgEgeROIjEQSQOInEQiYNIHETiIBIHkTiIxEEkDiJxEImDSBw78P7xWbJdcXR3KqOkjx9/fv+av1WW+BrEf//+M3MB4mjqzqiYlog42llyBJnTh3OOXhaeW8w5BTE5uljx+x49P8TRwpZJMC4RcRR7ygFiUB9TL424sr2MoUcWcdToPDDOxFGg+cA4cyk7217KeDM5Zqq6f7baA3G0fW6T7zis03bv3eGwMtz7x+fGMqrqF8dYOzrD+GoHA3mndp3FiTiG2Olx5EqLRRzJAQbGWZd1HMMxBsZZr9Xs15EGxtnTFjT0uTV/keBgA+PMpexWRy3jzWFliwNncWJyrHT4Mt5MjhVeIYuT3Sy0iZ5v9hxkZ8stVDgwqi7WxLFI1cC4ud3TDyfMISek39h4w33cwJgwTsRxz8YsRh9KRvfhsHJb7SXJ1davHu3yX98/PscdX0yOGwoHxs0H/PYng4jjWvnF6uUC0gNe/nzcwcVh5X/lWXRzwKe0zuoyDpnFyWGf2HIGRnLk57aEgXHHA1/B0PYdN+t+T50HxrfnpEtOWrd70auVLQNj8sz4utRpf6XHn41XOg+Myw1dvdJ153+OW8ZrTY4dDYwlmxu9pFeJY8v9s6pzz/vbnbCqI5yQ8qiFYb3K5GAFcRCJg0gcROIgEgeROIjEQSQOInEQiYNIHETiIBIHkTiICt7GcueTn23Vrrlq67MnR+EnP1erXfOrfFZ2ySc/u6ldc+3W58VR/o7IFWrXXL7HJsXR4b3Uj6pdc4c99sCjL1nKoHOlPX539sI1d95jLmWJxEEkDqJJcXT4brxH1a65wx57chx3zoNWf6tm4RXjhDV33mNTDyvp+XSbGZdq11y79dnnHIXfNrFa7ZoLt/7AB6mXe+Lqp70yVrvmnntsyOR41vpq72/NfJyee8ylLNGoOLYnPP9WS+2aG+6xgZOjdk/N3+7e2/pqyAnplYfOtprcm61dc5M9NuOc4ymvCE1Wu+Yme2zG5Lh082+iTxM31a65cOuz42BHXMoSiYNIHETiIBIHkTiIxEEkDiJxEImDSBxE4iASB5E4iMRBJA4icRCJg0gcROIgEgeROIjEQSQOInEQiYNIHETiIBIHkTiIxEEkDiJxEImDSBxE4iASB5E4iP4CLdp9dCXJgl8AAAAASUVORK5CYII=">
+<link rel="apple-touch-icon" href="icone.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Archivo+Narrow:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -88,6 +88,11 @@ header{flex-direction:column;align-items:stretch}
 .chk input{width:26px;height:26px;padding:0;flex:none;-webkit-appearance:auto;appearance:auto}
 .dica{font-size:14px;color:var(--mute);margin:10px 2px 0;min-height:18px}
 small{font-weight:400}
+.etq{font-weight:700;font-size:12px;border-radius:999px;padding:3px 10px}
+.etq.pago{background:var(--green);color:#fff}
+.etq.aberto{background:var(--amber);color:var(--amber-ink)}
+.card.pago{border-color:var(--green)}
+details summary{cursor:pointer;font-size:15px;font-weight:600;padding:6px 0}
 .status{font-size:13px;border-radius:10px;padding:8px 12px;margin:0 0 10px;line-height:1.4}
 .status.ok{color:var(--green);background:var(--green-bg)}
 .status.falha{color:#fff;background:#B3412E;font-weight:600}
@@ -171,14 +176,28 @@ small{font-weight:400}
 
   <!-- COMISSÕES -->
   <section id="comis" hidden>
-    <p class="explica">O sócio paga a comissão a cada 15 dias de serviço, em data que varia. Por isso o app agrupa por quinzena. Quando ele pagar, toque em "Marcar como recebida" e a quinzena fica verde.</p>
+    <p class="explica">As comissões ficam <b>em aberto</b> e vão acumulando. Quando o sócio pagar, escolha de que dia até que dia foi pago: os serviços desse período ficam com a etiqueta <b>Pago</b>.</p>
     <div class="stats">
       <div class="stat"><span>A receber</span><b id="tPend">R$ 0,00</b></div>
       <div class="stat"><span>Já recebido</span><b class="in" id="tRec">R$ 0,00</b></div>
     </div>
-    <p class="count" id="contM"></p>
-    <div id="listM"></div>
-    <p class="explica" id="semMes" hidden>Ainda não há serviços com valor cadastrado. Edite um serviço e informe o valor e a despesa para ver a comissão aqui.</p>
+    <div id="cartaoAberto" style="margin-top:12px"></div>
+    <p class="explica" id="semMes" hidden></p>
+
+    <div class="form">
+      <h2 class="titulo-form">Marcar recebimento</h2>
+      <div class="rel-campos">
+        <div><label for="pgDe">Pago de</label><input id="pgDe" type="date"></div>
+        <div><label for="pgAte">até</label><input id="pgAte" type="date"></div>
+      </div>
+      <p class="dica" id="prevPg" role="status"></p>
+      <button class="btn" id="marcaPg" type="button">Marcar como recebido</button>
+      <p class="msg" id="msgPg" role="status"></p>
+    </div>
+
+    <h2 class="bloco-titulo">Recebimentos marcados</h2>
+    <p class="count" id="contPg"></p>
+    <div id="listPg"></div>
 
     <h2 class="bloco-titulo">Resumo para mim</h2>
     <p class="explica">Escolha o período para ver quantos serviços foram feitos, o total de seguro e de particular e a sua comissão.</p>
@@ -335,9 +354,9 @@ const rotuloQuinzena = chave => {
 
 /* ---------- dados locais (somente neste aparelho) ---------- */
 /* Guardados em duas gavetas do navegador (localStorage e IndexedDB). Se uma falhar, a outra segura. */
-let NOVOS = {servicos: [], caixa: [], recebidos: {}, ajustes: {}, salvoEm: 0};
+let NOVOS = {servicos: [], caixa: [], recebidos: {}, ajustes: {}, pagamentos: [], salvoEm: 0};
 const estado = {ls: null, idb: null};
-const normaliza = v => ({servicos: v.servicos, caixa: v.caixa, recebidos: v.recebidos || {}, ajustes: v.ajustes || {}, salvoEm: v.salvoEm || 0});
+const normaliza = v => ({servicos: v.servicos, caixa: v.caixa, recebidos: v.recebidos || {}, ajustes: v.ajustes || {}, pagamentos: v.pagamentos || [], salvoEm: v.salvoEm || 0});
 const valido = v => v && Array.isArray(v.servicos) && Array.isArray(v.caixa);
 
 const IDB = {
@@ -450,10 +469,12 @@ let servicos = [], caixa = [];
 const renderServico = x => {
   const temValor = (x.valor || 0) > 0;
   const temDesp = (x.despesa || 0) > 0;
+  const pagoX = temValor && estaPago(x, MAPA_PAGOS);
+  const etiqueta = temValor ? (pagoX ? '<span class="etq pago">Pago</span>' : '<span class="etq aberto">A receber</span>') : '';
   const com = comissaoDe(x.valor, x.despesa);
   return `
-  <div class="card">
-    <div class="top"><span>${dt(x.data)}</span></div>
+  <div class="card${pagoX ? ' pago' : ''}">
+    <div class="top"><span>${dt(x.data)}</span>${etiqueta}</div>
     <div class="title">${esc(x.marca)} ${esc(x.veiculo)}</div>
     <div class="sub">${esc(x.saida) || '?'} → ${esc(x.destino) || '?'}</div>
     ${(x.tipo || x.cia) ? `<div class="sub"><b>${esc(x.tipo)}</b>${x.cia ? ' · ' + esc(x.cia) : ''}</div>` : ''}
@@ -625,61 +646,131 @@ document.getElementById('excluiS').addEventListener('click', () => {
   recalcular();
 });
 
-/* ---------- comissões por quinzena ---------- */
+/* ---------- comissões: recebimento por período ---------- */
+let MAPA_PAGOS = new Map();
+const montaMapaPagos = () => { const m = new Map(); NOVOS.pagamentos.forEach(p => p.ids.forEach(id => m.set(id, p))); return m; };
+/* a marcação antiga por quinzena continua valendo para os serviços dela */
+const estaPago = (x, mapa) => mapa.has(x.id) || (!!x.data && !!NOVOS.recebidos[quinzenaDe(x.data)]);
+const comDe = x => comissaoDe(x.valor, x.despesa);
+let pgTocado = false;
+const elPgDe = document.getElementById('pgDe'), elPgAte = document.getElementById('pgAte');
+
+function abertosNoPeriodo(de, ate){
+  if (!de || !ate || de > ate) return [];
+  return servicosAtuais().filter(x => x.data && x.valor > 0 && x.data >= de && x.data <= ate && !estaPago(x, MAPA_PAGOS));
+}
+function atualizaPrevPg(){
+  const sel = abertosNoPeriodo(elPgDe.value, elPgAte.value);
+  const el = document.getElementById('prevPg');
+  if (elPgDe.value && elPgAte.value && elPgDe.value > elPgAte.value) { el.textContent = 'A data inicial é depois da final.'; return; }
+  el.textContent = sel.length
+    ? `${plural(sel.length, 'serviço em aberto', 'serviços em aberto')} neste período. Comissão: ${fmt(sel.reduce((s, x) => s + comDe(x), 0))}.`
+    : 'Nenhum serviço em aberto neste período.';
+}
+elPgDe.addEventListener('input', () => { pgTocado = true; atualizaPrevPg(); });
+elPgAte.addEventListener('input', () => { pgTocado = true; atualizaPrevPg(); });
+
 function renderComissoes(){
-  const grupos = {};
-  servicosAtuais().forEach(x => {
-    if (!x.data) return;
-    const tem = x.valor > 0;
-    if (!tem && ehBase(x.id)) return;
-    const q = quinzenaDe(x.data);
-    const g = grupos[q] || (grupos[q] = {q, qtd: 0, valor: 0, despesa: 0, com: 0, sem: 0});
-    g.qtd++;
-    if (tem) { g.valor += x.valor; g.despesa += (x.despesa || 0); g.com += comissaoDe(x.valor, x.despesa); }
-    else g.sem++;
-  });
-  const lista = Object.values(grupos).sort((a, b) => b.q.localeCompare(a.q));
-  let pend = 0, rec = 0;
-  lista.forEach(g => { if (NOVOS.recebidos[g.q]) rec += g.com; else pend += g.com; });
-  document.getElementById('tPend').textContent = fmt(pend);
-  document.getElementById('tRec').textContent = fmt(rec);
-  document.getElementById('semMes').hidden = lista.length > 0;
-  document.getElementById('contM').textContent = plural(lista.length, 'quinzena com comissão', 'quinzenas com comissão');
-  document.getElementById('listM').innerHTML = lista.map(g => {
-    const pago = !!NOVOS.recebidos[g.q];
-    return `
-    <div class="card ${pago ? 'recebida' : ''}">
-      <div class="top"><span>${plural(g.qtd, 'serviço', 'serviços')}</span><span>${faixaQuinzena(g.q).de.slice(8)} a ${faixaQuinzena(g.q).ate.slice(8)}</span></div>
-      <div class="title">${rotuloQuinzena(g.q)}</div>
+  const todos = servicosAtuais();
+  const comValor = todos.filter(x => x.data && x.valor > 0).sort(byDataAsc);
+  const abertos = comValor.filter(x => !estaPago(x, MAPA_PAGOS));
+  const pagosL = comValor.filter(x => estaPago(x, MAPA_PAGOS));
+  const soma = (l, f) => l.reduce((s, x) => s + f(x), 0);
+  document.getElementById('tPend').textContent = fmt(soma(abertos, comDe));
+  document.getElementById('tRec').textContent = fmt(soma(pagosL, comDe));
+
+  const sem = todos.filter(x => !ehBase(x.id) && !(x.valor > 0)).length;
+  const aviso = document.getElementById('semMes');
+  if (sem > 0) { aviso.textContent = `${plural(sem, 'serviço está', 'serviços estão')} sem valor e não ${sem === 1 ? 'entra' : 'entram'} nas comissões até você informar o valor.`; aviso.hidden = false; }
+  else if (!comValor.length) { aviso.textContent = 'Ainda não há serviços com valor cadastrado. Edite um serviço e informe o valor para ver a comissão aqui.'; aviso.hidden = false; }
+  else aviso.hidden = true;
+
+  const ca = document.getElementById('cartaoAberto');
+  if (!abertos.length) {
+    ca.innerHTML = '<div class="card"><div class="title">Nada em aberto</div><div class="sub">Todas as comissões cadastradas já foram recebidas.</div></div>';
+  } else {
+    const ini = abertos[0].data, fimD = abertos[abertos.length - 1].data;
+    ca.innerHTML = `
+    <div class="card">
+      <div class="top"><span>Em aberto</span><span>${plural(abertos.length, 'serviço', 'serviços')}</span></div>
+      <div class="title">${dt(ini)} a ${dt(fimD)}</div>
       <div class="linha-valores">
-        <div><span>Valor </span><b>${fmt(g.valor)}</b></div>
-        <div><span>Despesa </span><b>${fmt(g.despesa)}</b></div>
-        <div><span>Comissão </span><b class="com">${fmt(g.com)}</b></div>
+        <div><span>Valor </span><b>${fmt(soma(abertos, x => x.valor))}</b></div>
+        <div><span>Despesa </span><b>${fmt(soma(abertos, x => x.despesa || 0))}</b></div>
+        <div><span>Comissão </span><b class="com">${fmt(soma(abertos, comDe))}</b></div>
       </div>
-      ${g.sem ? `<div class="sub" style="margin-top:8px">${plural(g.sem, 'serviço ainda sem valor', 'serviços ainda sem valor')}: ${g.sem === 1 ? 'não entra' : 'não entram'} na comissão até você informar o valor.</div>` : ''}
+      <div class="acoes"><button class="btn mini sec" data-rel-de="${ini}" data-rel-ate="${fimD}" type="button">Relatório</button></div>
+      <details style="margin-top:10px"><summary>Ver os serviços em aberto</summary>
+        ${abertos.map(x => `<div class="sub" style="margin-top:6px">${dt(x.data)} · ${esc(x.marca)} ${esc(x.veiculo)} · <b>${fmt(comDe(x))}</b></div>`).join('')}
+      </details>
+    </div>`;
+  }
+
+  if (!pgTocado) {
+    elPgDe.value = abertos.length ? abertos[0].data : '';
+    elPgAte.value = abertos.length ? abertos[abertos.length - 1].data : '';
+  }
+  atualizaPrevPg();
+
+  const porId = new Map(todos.map(x => [x.id, x]));
+  const pags = NOVOS.pagamentos.slice().sort((a, b) => (b.ate || '').localeCompare(a.ate || '') || (b.criadoEm || '').localeCompare(a.criadoEm || ''));
+  document.getElementById('contPg').textContent = plural(pags.length, 'recebimento marcado', 'recebimentos marcados');
+  document.getElementById('listPg').innerHTML = pags.map(p => {
+    const lista = p.ids.map(id => porId.get(id)).filter(Boolean);
+    return `
+    <div class="card recebida">
+      <div class="top"><span>Marcado em ${dt(p.criadoEm)}</span><span>${plural(lista.length, 'serviço', 'serviços')}</span></div>
+      <div class="title">Pago: ${dt(p.de)} a ${dt(p.ate)}</div>
+      <div class="linha-valores"><div><span>Comissão </span><b class="com">${fmt(soma(lista, comDe))}</b></div></div>
       <div class="acoes">
-        <button class="btn mini ${pago ? 'ok' : 'pend'}" data-quinzena="${g.q}" type="button">${pago ? 'Recebida ✓' : 'Marcar como recebida'}</button>
-        <button class="btn mini sec" data-relatorio="${g.q}" type="button">Relatório</button>
+        <button class="btn mini sec" data-rel-de="${esc(p.de)}" data-rel-ate="${esc(p.ate)}" type="button">Relatório</button>
+        <button class="btn mini perigo" data-desfaz="${esc(p.id)}" type="button">Desfazer</button>
       </div>
     </div>`;
   }).join('');
 }
-document.getElementById('listM').addEventListener('click', e => {
-  const rel = e.target.closest('button[data-relatorio]');
+
+document.getElementById('marcaPg').addEventListener('click', () => {
+  const de = elPgDe.value, ate = elPgAte.value;
+  const msg = document.getElementById('msgPg');
+  if (!de || !ate) { mostra(msg, 'Escolha as duas datas.', true); return; }
+  if (de > ate) { mostra(msg, 'A data inicial é depois da final.', true); return; }
+  const sel = abertosNoPeriodo(de, ate);
+  if (!sel.length) { mostra(msg, 'Não há serviço em aberto neste período.', true); return; }
+  NOVOS.pagamentos.push({id: novoId(), de, ate, ids: sel.map(x => x.id), criadoEm: hoje()});
+  const ok = gravaLocal();
+  pgTocado = false;
+  recalcular();
+  mostra(msg, ok ? `Recebimento marcado: ${plural(sel.length, 'serviço ficou', 'serviços ficaram')} como Pago.` : 'Não foi possível salvar neste navegador. Faça um backup.', !ok);
+});
+
+let pendDesf = null, relogioDesf = null;
+document.getElementById('comis').addEventListener('click', e => {
+  const rel = e.target.closest('button[data-rel-de]');
   if (rel) {
-    const f = faixaQuinzena(rel.dataset.relatorio);
-    document.getElementById('relDe').value = f.de;
-    document.getElementById('relAte').value = f.ate;
+    document.getElementById('relDe').value = rel.dataset.relDe;
+    document.getElementById('relAte').value = rel.dataset.relAte;
     gerarRelatorio();
     document.getElementById('saidaRel').scrollIntoView({behavior: 'smooth', block: 'start'});
     return;
   }
-  const btn = e.target.closest('button[data-quinzena]');
-  if (!btn) return;
-  const q = btn.dataset.quinzena;
-  if (NOVOS.recebidos[q]) delete NOVOS.recebidos[q]; else NOVOS.recebidos[q] = true;
-  gravaLocal();
-  renderComissoes();
+  const des = e.target.closest('button[data-desfaz]');
+  if (!des) return;
+  const id = des.dataset.desfaz;
+  if (pendDesf !== id) {
+    document.querySelectorAll('#listPg button[data-desfaz]').forEach(b => b.textContent = 'Desfazer');
+    pendDesf = id;
+    des.textContent = 'Toque de novo para desfazer';
+    clearTimeout(relogioDesf);
+    relogioDesf = setTimeout(() => { pendDesf = null; des.textContent = 'Desfazer'; }, 5000);
+    return;
+  }
+  clearTimeout(relogioDesf);
+  pendDesf = null;
+  NOVOS.pagamentos = NOVOS.pagamentos.filter(p => p.id !== id);
+  const ok = gravaLocal();
+  recalcular();
+  mostra(document.getElementById('msgPg'), ok ? 'Recebimento desfeito. Os serviços voltaram para em aberto.' : 'Não foi possível salvar neste navegador. Faça um backup.', !ok);
 });
 
 /* ---------- relatório para o sócio ---------- */
@@ -1089,6 +1180,7 @@ document.getElementById('listC').addEventListener('click', e => {
 /* ---------- recálculo geral ---------- */
 function recalcular(){
   servicos = servicosAtuais().sort(byDataDesc);
+  MAPA_PAGOS = montaMapaPagos();
   LIVRO = montaLivro();
   caixa = LIVRO.seq.filter(it => !it.apagado).map(it => ({...it.x, sd: it.run})).reverse();
   const ent = caixa.reduce((s, x) => s + (x.entrada || 0), 0);
@@ -1169,6 +1261,7 @@ function importarDados(dados){
   dados.caixa.forEach(x => { if (x && !ids.has(x.id)) { NOVOS.caixa.push(x); ids.add(x.id); adicionados++; } });
   if (dados.recebidos) Object.keys(dados.recebidos).forEach(k => NOVOS.recebidos[k] = true);
   if (dados.ajustes) Object.assign(NOVOS.ajustes, dados.ajustes);
+  if (Array.isArray(dados.pagamentos)) dados.pagamentos.forEach(p => { if (p && Array.isArray(p.ids) && !NOVOS.pagamentos.some(q => q.id === p.id)) { NOVOS.pagamentos.push(p); adicionados++; } });
   gravaLocal();
   recalcular();
   return adicionados;
