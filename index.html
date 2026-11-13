@@ -102,6 +102,31 @@ nav button{font-size:14px;padding:11px 2px}
 .stat.verde b{color:var(--green)}
 .card.taxi{border-left:5px solid var(--amber)}
 .seg.tres button{padding:13px 4px;font-size:15px}
+nav{overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:1 0 auto;padding:11px 12px}
+textarea{width:100%;min-height:90px;padding:14px;font:500 17px Archivo,sans-serif;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)}
+.seg.quebra{flex-wrap:wrap}
+.seg.quebra button{flex:1 0 30%;padding:12px 4px;font-size:15px}
+.ckv{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:16px}
+.ckb{min-width:56px;padding:10px 0;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--mute);font:700 16px Archivo,sans-serif;cursor:pointer}
+.ckb.S{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.ckb.N{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ckb.I{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
+.padv{display:block;width:100%;height:150px;background:#fff;border:1px solid var(--line);border-radius:12px;touch-action:none}
+.fotov{display:flex;gap:10px;margin:10px 0;align-items:flex-start}
+.fotov img{width:96px;height:96px;object-fit:cover;border-radius:10px;flex:none}
+.fotov>div{flex:1}
+.card.vist{border-left:5px solid var(--ink)}
+nav{overflow:visible}
+nav button{flex:1;padding:11px 6px;font-size:15px}
+#btnMais{flex:0 0 68px;font-size:18px;letter-spacing:2px;line-height:1}
+#menuMais{position:fixed;z-index:6;min-width:200px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+#menuMais button{display:block;width:100%;text-align:left;padding:14px 16px;border:0;background:none;color:var(--ink);font:600 16px Archivo,sans-serif;border-radius:10px;cursor:pointer}
+#menuMais button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.vcorpo{display:flex;gap:12px;align-items:center;margin:6px 0}
+.vcorpo>div{flex:1;min-width:0}
+.thumbv{width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -122,10 +147,14 @@ nav button{font-size:14px;padding:11px 2px}
 
   <nav role="tablist">
     <button role="tab" data-tab="serv" aria-selected="true">Serviços</button>
+    <button role="tab" data-tab="vist" aria-selected="false">Vistoria</button>
+    <button id="btnMais" aria-haspopup="true" aria-expanded="false" aria-selected="false" aria-label="Mais opções">•••</button>
+  </nav>
+  <div id="menuMais" role="menu" hidden>
     <button role="tab" data-tab="comis" aria-selected="false">Comissões</button>
     <button role="tab" data-tab="caixa" aria-selected="false">Caixa</button>
     <button role="tab" data-tab="taxi" aria-selected="false">Táxi</button>
-  </nav>
+  </div>
 
   <!-- SERVIÇOS -->
   <section id="serv">
@@ -245,6 +274,137 @@ nav button{font-size:14px;padding:11px 2px}
     </div>
     <img class="img-rel" id="imgRel" alt="Relatório em imagem">
     <p class="msg" id="msgRel" role="status"></p>
+  </section>
+
+  <!-- VISTORIA -->
+  <section id="vist" hidden>
+    <p class="explica">Vistoria do veículo com fotos e assinatura do cliente. Gera um PDF para enviar.</p>
+    <p class="explica" id="offStatus"></p>
+    <p class="explica" id="avisoEspaco" hidden></p>
+    <button class="btn" id="abreFormV" type="button">Nova vistoria</button>
+    <button class="btn sec" id="abreFormP" type="button">Ficha em papel (só fotos)</button>
+    <div class="form" id="formV" hidden>
+      <h2 class="titulo-form" id="tituloFormV">Nova vistoria</h2>
+      <div id="vCampos"></div>
+      <label>Motivo da chamada</label>
+      <div class="seg quebra" id="vMotivo"></div>
+      <label class="chk"><input type="checkbox" id="vPlat"> Remoção com plataforma</label>
+      <label>Combustível</label>
+      <div class="seg quebra" id="vComb"></div>
+      <label>Pneus</label>
+      <div class="seg quebra" id="vPneus"></div>
+      <label>Acessórios / equipamentos</label>
+      <p class="explica">Toque para alternar: S = existe, N = não existe, I = incompleto ou avariado.</p>
+      <div id="vItens"></div>
+      <label for="v_obs">Observações / avarias</label>
+      <textarea id="v_obs"></textarea>
+      <label>Fotos do veículo</label>
+      <input id="vFotoIn" type="file" accept="image/*" multiple hidden>
+      <button class="btn sec" id="vAddFoto" type="button">Adicionar fotos</button>
+      <div id="vFotos"></div>
+      <p class="explica"><b>O motorista não está autorizado a indicar a oficina.</b> Não nos responsabilizamos por pertences deixados no interior do veículo. Declaro que li, entendi e estou de acordo com as informações contidas neste formulário.</p>
+      <div class="grid2">
+        <div><label for="v_nomeCli">Cliente: nome</label><input id="v_nomeCli" type="text"></div>
+        <div><label for="v_rgCli">Documento</label><input id="v_rgCli" type="text" placeholder="CPF, CNH ou RG"></div>
+      </div>
+      <label>Assinatura do cliente</label>
+      <canvas class="padv" id="padCli"></canvas>
+      <button class="btn mini sec" id="limpaCli" type="button">Limpar assinatura</button>
+      <div class="grid2">
+        <div><label for="v_nomeMot">Motorista: nome</label><input id="v_nomeMot" type="text"></div>
+        <div><label for="v_rgMot">Documento</label><input id="v_rgMot" type="text" placeholder="CPF, CNH ou RG"></div>
+      </div>
+      <label>Assinatura do motorista</label>
+      <canvas class="padv" id="padMot"></canvas>
+      <button class="btn mini sec" id="limpaMot" type="button">Limpar assinatura</button>
+      <div id="blocoEnt" hidden>
+        <h2 class="titulo-form">Entrega no destino</h2>
+        <button class="btn sec" id="abreEnt" type="button">Registrar entrega</button>
+        <div id="entCampos" hidden>
+          <p class="explica">Tire as fotos novas e peça a assinatura de quem recebe o veículo.</p>
+          <div class="grid2">
+            <div><label for="v_entData">Data da entrega</label><input id="v_entData" type="date"></div>
+            <div><label for="v_entHora">Hora</label><input id="v_entHora" type="time"></div>
+          </div>
+          <label>Acessórios na entrega</label>
+          <p class="explica">Começam iguais à retirada. Toque só no que estiver diferente.</p>
+          <div id="eItens"></div>
+          <label for="v_entObs">Observações da entrega</label>
+          <textarea id="v_entObs"></textarea>
+          <label>Fotos da entrega</label>
+          <input id="eFotoIn" type="file" accept="image/*" multiple hidden>
+          <button class="btn sec" id="eAddFoto" type="button">Adicionar fotos</button>
+          <div id="eFotos"></div>
+          <div class="grid2">
+            <div><label for="v_nomeRec">Quem recebe: nome</label><input id="v_nomeRec" type="text"></div>
+            <div><label for="v_docRec">Documento</label><input id="v_docRec" type="text" placeholder="CPF, CNH ou RG"></div>
+          </div>
+          <label>Assinatura de quem recebe</label>
+          <canvas class="padv" id="padRec"></canvas>
+          <button class="btn mini sec" id="limpaRec" type="button">Limpar assinatura</button>
+          <div class="grid2">
+            <div><label for="v_nomeMotE">Motorista: nome</label><input id="v_nomeMotE" type="text"></div>
+            <div><label for="v_docMotE">Documento</label><input id="v_docMotE" type="text" placeholder="CPF, CNH ou RG"></div>
+          </div>
+          <label>Assinatura do motorista</label>
+          <canvas class="padv" id="padMotE"></canvas>
+          <button class="btn mini sec" id="limpaMotE" type="button">Limpar assinatura</button>
+          <button class="btn perigo" id="descartaEnt" type="button">Remover entrega</button>
+        </div>
+      </div>
+      <button class="btn" id="salvaV" type="button">Salvar vistoria</button>
+      <button class="btn ok" id="pdfV" type="button">Gerar PDF para o cliente</button>
+      <button class="btn sec" id="cancelaV" type="button">Fechar</button>
+      <button class="btn perigo" id="excluiV" type="button" hidden>Excluir vistoria</button>
+      <p class="msg" id="msgV" role="status"></p>
+    </div>
+    <div class="form" id="formP" hidden>
+      <h2 class="titulo-form" id="tituloFormP">Ficha em papel</h2>
+      <p class="explica">Fotografe a ficha preenchida (frente, verso, retirada e entrega) e anexe aqui.</p>
+      <div class="grid2">
+        <div><label for="p_numero">Nº da ficha (impresso)</label><input id="p_numero" type="text" inputmode="numeric"></div>
+        <div><label for="p_data">Data</label><input id="p_data" type="date"></div>
+      </div>
+      <div class="grid2">
+        <div><label for="p_placa">Placa</label><input id="p_placa" type="text" autocapitalize="characters"></div>
+        <div><label for="p_veic">Veículo</label><input id="p_veic" type="text"></div>
+      </div>
+      <label for="p_cia">Seguradora / Cia</label>
+      <input id="p_cia" type="text" list="listaCias" autocomplete="off">
+      <label for="p_prop">Proprietário / cliente</label>
+      <input id="p_prop" type="text">
+      <label for="p_obs">Observações</label>
+      <textarea id="p_obs"></textarea>
+      <label>Fotos da ficha</label>
+      <input id="pFotoIn" type="file" accept="image/*" multiple hidden>
+      <button class="btn sec" id="pAddFoto" type="button">Fotografar / anexar fotos</button>
+      <div id="pFotos"></div>
+      <button class="btn" id="salvaP" type="button">Salvar ficha</button>
+      <button class="btn ok" id="pdfP" type="button">Gerar PDF da ficha</button>
+      <button class="btn sec" id="cancelaP" type="button">Fechar</button>
+      <button class="btn perigo" id="excluiP" type="button" hidden>Excluir ficha</button>
+      <p class="msg" id="msgP" role="status"></p>
+    </div>
+
+    <label for="buscaV">Buscar</label>
+    <input id="buscaV" type="search" placeholder="Placa, cliente, veículo, nº...">
+    <p class="count" id="contV"></p>
+    <div id="listV"></div>
+    <button class="more" id="maisV" hidden>Mostrar mais</button>
+    <p class="msg" id="msgListaV" role="status"></p>
+
+    <details class="form" id="espacoV">
+      <summary>Espaço e backup das vistorias</summary>
+      <p class="explica" id="espacoTxt"></p>
+      <label for="diasLimpa">Limpar fotos de vistorias com mais de</label>
+      <select id="diasLimpa"><option value="30">30 dias</option><option value="60" selected>60 dias</option><option value="90">90 dias</option><option value="180">180 dias</option></select>
+      <p class="explica">Só limpa as vistorias que já tiveram o PDF gerado ou enviado. As fotos apagadas não voltam; ficam os dados, as assinaturas e uma miniatura.</p>
+      <button class="btn sec" id="limpaFotosV" type="button">Limpar fotos antigas</button>
+      <button class="btn sec" id="backupV" type="button">Salvar backup das vistorias</button>
+      <input id="restauraIn" type="file" accept=".json,application/json" hidden>
+      <button class="btn sec" id="restauraV" type="button">Restaurar backup</button>
+      <p class="msg" id="msgEspaco" role="status"></p>
+    </details>
   </section>
 
   <!-- TÁXI -->
@@ -526,10 +686,25 @@ async function iniciaArmazenamento(){
 
 /* ---------- abas ---------- */
 const tabs = document.querySelectorAll('[role="tab"]');
+const btnMais = document.getElementById('btnMais'), menuMais = document.getElementById('menuMais');
+function fechaMenuMais(){ menuMais.hidden = true; btnMais.setAttribute('aria-expanded', 'false'); }
 tabs.forEach(btn => btn.addEventListener('click', () => {
-  tabs.forEach(b => b.setAttribute('aria-selected', b === btn));
-  ['serv','comis','caixa','taxi'].forEach(id => document.getElementById(id).hidden = (id !== btn.dataset.tab));
+  tabs.forEach(b => b.setAttribute('aria-selected', String(b === btn)));
+  btnMais.setAttribute('aria-selected', String(menuMais.contains(btn)));
+  ['serv','comis','caixa','taxi','vist'].forEach(id => document.getElementById(id).hidden = (id !== btn.dataset.tab));
+  fechaMenuMais();
+  window.scrollTo({top: 0});
 }));
+btnMais.addEventListener('click', e => {
+  e.stopPropagation();
+  if (!menuMais.hidden) { fechaMenuMais(); return; }
+  const r = document.querySelector('nav').getBoundingClientRect();
+  menuMais.style.top = (r.bottom + 2) + 'px';
+  menuMais.style.right = (document.documentElement.clientWidth - r.right + 20) + 'px';
+  menuMais.hidden = false;
+  btnMais.setAttribute('aria-expanded', 'true');
+});
+document.addEventListener('click', e => { if (!menuMais.hidden && !menuMais.contains(e.target)) fechaMenuMais(); });
 
 /* ---------- ajuda para tela inicial ---------- */
 const btnAjuda = document.getElementById('btnAjuda');
@@ -1463,6 +1638,586 @@ document.getElementById('excluiT').addEventListener('click', () => {
   renderTaxiTudo();
 });
 
+/* ---------- vistoria (fotos, assinatura e PDF; guardada à parte, fora do backup) ---------- */
+const ITENS_V = ['Bagagito / Tampão','Retrovisor Elétrico','Retrovisor Comum','Borrachão Lateral','Brake Light','Faróis Auxiliares','Calotas','Rodas de Liga Leve','Rodas Comum','Chaves',
+  'Pneus','Rádio','Rádio Toca-Fitas','CD','Alto Falantes','Amplificador','Console interno','Bancos Dianteiros','Bancos Traseiros','Documentos',
+  'Tapetes','Buzina','Extintor','Estepe','Macaco','Triângulo','Chave de Roda','Alarme','Cárter / Protetor','Vidro Elétrico'];
+const SEGS_V = {vMotivo: ['motivo', ['Acidente','Roubo/Furto','Pane','Combustível','Pneu','Outros']],
+                vComb: ['comb', ['Reserva','1/4','1/2','3/4','Cheio']],
+                vPneus: ['pneus', ['Novos','Bons','Ruins']]};
+const LINHAS_V = [[['numero','Nº','text'],['data','Data','date']], [['hora','Hora','time'],['atendente','Atendente','text']],
+  [['cia','Seguradora / Cia','text']], [['assist','Assistência','text']], [['prop','Proprietário','text'],['tel','Telefone','tel']],
+  [['veic','Veículo','text']], [['ano','Ano','text'],['cor','Cor','text']], [['placa','Placa','text'],['km','KM do veículo','text']],
+  [['atend','Local de atendimento','text']], [['dest','Destino','text']], [['kmSaida','Km saída','text'],['kmChegada','Km chegada','text']]];
+const CHAVES_V = LINHAS_V.flat().map(c => c[0]).concat(['obs','nomeCli','rgCli','nomeMot','rgMot']);
+const campoV = ([k, nome, tipo]) => `<div><label for="v_${k}">${nome}</label><input id="v_${k}" type="${tipo}"${k === 'cia' ? ' list="listaCias" autocomplete="off"' : ''}${k === 'placa' ? ' autocapitalize="characters"' : ''}></div>`;
+document.getElementById('vCampos').innerHTML = LINHAS_V.map(l => l.length > 1 ? `<div class="grid2">${l.map(campoV).join('')}</div>` : campoV(l[0])).join('');
+
+/* banco próprio (IndexedDB): fotos ocupam espaço demais para o armazenamento normal */
+const idbV = new Promise((ok, err) => { const r = indexedDB.open('vistoriasDB', 1); r.onupgradeneeded = () => r.result.createObjectStore('v', {keyPath: 'id'}); r.onsuccess = () => ok(r.result); r.onerror = () => err(r.error); });
+idbV.catch(() => {});
+const txV = async (modo, fn) => { const db = await idbV; return new Promise((ok, err) => { const t = db.transaction('v', modo); const rq = fn(t.objectStore('v')); t.oncomplete = () => ok(rq && rq.result); t.onerror = () => err(t.error); }); };
+const todasV = () => txV('readonly', st => st.getAll());
+const gravaV = v => txV('readwrite', st => st.put(v));
+const apagaV = id => txV('readwrite', st => st.delete(id));
+
+let editandoV = null, confirmaExclusaoV = false, listaV = [], excluiPendV = '';
+let vEst = {itens: {}, motivo: '', comb: '', pneus: '', fotos: []};
+let eEst = {ativo: false, itens: {}, fotos: []}, confirmaDescartaE = false;
+const formV = document.getElementById('formV'), msgV = document.getElementById('msgV'), msgListaV = document.getElementById('msgListaV');
+
+function criaPad(cv){
+  const ctx = cv.getContext('2d'); let desenha = false, sujo = false;
+  function ajusta(dados){
+    const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d);
+    ctx.setTransform(d, 0, 0, d, 0, 0); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, r.width, r.height);
+    ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#111'; sujo = false;
+    if (dados) { const im = new Image(); im.onload = () => { ctx.drawImage(im, 0, 0, r.width, r.height); sujo = true; }; im.src = dados; }
+  }
+  const pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  cv.addEventListener('pointerdown', e => { desenha = true; cv.setPointerCapture(e.pointerId); const [x, y] = pos(e); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 0.1, y + 0.1); ctx.stroke(); sujo = true; e.preventDefault(); });
+  cv.addEventListener('pointermove', e => { if (!desenha) return; const [x, y] = pos(e); ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y); e.preventDefault(); });
+  ['pointerup', 'pointercancel'].forEach(ev => cv.addEventListener(ev, () => { desenha = false; }));
+  return {ajusta, limpa: () => ajusta(), dados: () => sujo ? cv.toDataURL('image/png') : ''};
+}
+const padCli = criaPad(document.getElementById('padCli')), padMot = criaPad(document.getElementById('padMot'));
+document.getElementById('limpaCli').addEventListener('click', () => padCli.limpa());
+document.getElementById('limpaMot').addEventListener('click', () => padMot.limpa());
+const padRec = criaPad(document.getElementById('padRec')), padMotE = criaPad(document.getElementById('padMotE'));
+document.getElementById('limpaRec').addEventListener('click', () => padRec.limpa());
+document.getElementById('limpaMotE').addEventListener('click', () => padMotE.limpa());
+
+/* ---------- etapa de entrega (mesma vistoria) ---------- */
+const EF = {data: 'v_entData', hora: 'v_entHora', obs: 'v_entObs', nomeRec: 'v_nomeRec', docRec: 'v_docRec', nomeMot: 'v_nomeMotE', docMot: 'v_docMotE'};
+function renderItensE(){
+  document.getElementById('eItens').innerHTML = ITENS_V.map((n, i) => {
+    const e = eEst.itens[n] || '', o = vEst.itens[n] || '';
+    return `<div class="ckv"><span>${esc(n)}${e !== o ? ` <small style="color:var(--amber)">(era ${o || '—'})</small>` : ''}</span><button type="button" class="ckb ${e}" data-eitem="${i}">${e || '—'}</button></div>`;
+  }).join('');
+}
+function renderFotosE(){
+  document.getElementById('eFotos').innerHTML = eEst.fotos.map((f, i) => `<div class="fotov"><img src="${f.mini || f.img}" alt="Foto ${i + 1}"><div><input type="text" placeholder="Legenda (ex.: lateral direita)" value="${esc(f.leg || '')}" data-leg-e="${i}"><button class="btn mini perigo" type="button" data-rmfoto-e="${i}">Remover foto</button></div></div>`).join('');
+}
+function mostraEnt(ativo, ent){
+  eEst.ativo = ativo; confirmaDescartaE = false;
+  document.getElementById('descartaEnt').textContent = 'Remover entrega';
+  document.getElementById('entCampos').hidden = !ativo;
+  document.getElementById('abreEnt').hidden = ativo;
+  if (ativo) { renderItensE(); renderFotosE(); padRec.ajusta(ent && ent.assRec); padMotE.ajusta(ent && ent.assMot); }
+}
+document.getElementById('abreEnt').addEventListener('click', () => {
+  eEst = {ativo: true, itens: {...vEst.itens}, fotos: []};
+  Object.values(EF).forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('v_entData').value = hoje();
+  document.getElementById('v_entHora').value = new Date().toTimeString().slice(0, 5);
+  mostraEnt(true, null);
+  document.getElementById('entCampos').scrollIntoView({behavior: 'smooth', block: 'start'});
+});
+formV.addEventListener('click', e => {
+  const it = e.target.closest('button[data-eitem]');
+  if (it) { const nome = ITENS_V[Number(it.dataset.eitem)], ordem = ['', 'S', 'N', 'I']; eEst.itens[nome] = ordem[(ordem.indexOf(eEst.itens[nome] || '') + 1) % 4]; renderItensE(); return; }
+  const rm = e.target.closest('button[data-rmfoto-e]');
+  if (rm) { eEst.fotos.splice(Number(rm.dataset.rmfotoE), 1); renderFotosE(); }
+});
+formV.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.legE !== undefined) eEst.fotos[Number(e.target.dataset.legE)].leg = e.target.value; });
+document.getElementById('eAddFoto').addEventListener('click', () => document.getElementById('eFotoIn').click());
+document.getElementById('eFotoIn').addEventListener('change', async ev => {
+  const arqs = [...ev.target.files]; ev.target.value = '';
+  for (const f of arqs) {
+    if (eEst.fotos.length >= 20) { mostra(msgV, 'Limite de 20 fotos por etapa.', true); break; }
+    try { eEst.fotos.push(await reduzFoto(f)); } catch (_) { mostra(msgV, 'Uma das fotos não pôde ser lida.', true); }
+  }
+  renderFotosE();
+});
+document.getElementById('descartaEnt').addEventListener('click', () => {
+  const b = document.getElementById('descartaEnt');
+  if (!confirmaDescartaE) { confirmaDescartaE = true; b.textContent = 'Toque de novo para remover'; return; }
+  eEst = {ativo: false, itens: {}, fotos: []}; mostraEnt(false, null);
+  mostra(msgV, 'Entrega removida desta tela. Toque em Salvar vistoria para confirmar.', false);
+});
+
+function renderSegsV(){
+  Object.entries(SEGS_V).forEach(([id, [campo, ops]]) => {
+    document.getElementById(id).innerHTML = ops.map(o => `<button type="button" data-seg="${campo}" data-val="${esc(o)}" aria-pressed="${vEst[campo] === o}">${esc(o)}</button>`).join('');
+  });
+}
+function renderItensV(){
+  document.getElementById('vItens').innerHTML = ITENS_V.map((n, i) => { const e = vEst.itens[n] || ''; return `<div class="ckv"><span>${esc(n)}</span><button type="button" class="ckb ${e}" data-item="${i}">${e || '—'}</button></div>`; }).join('');
+}
+function renderFotosV(){
+  document.getElementById('vFotos').innerHTML = vEst.fotos.map((f, i) => `<div class="fotov"><img src="${f.mini || f.img}" alt="Foto ${i + 1}"><div><input type="text" placeholder="Legenda (ex.: lateral direita)" value="${esc(f.leg || '')}" data-leg="${i}"><button class="btn mini perigo" type="button" data-rmfoto="${i}">Remover foto</button></div></div>`).join('');
+}
+formV.addEventListener('click', e => {
+  const sg = e.target.closest('button[data-seg]');
+  if (sg) { const c = sg.dataset.seg; vEst[c] = vEst[c] === sg.dataset.val ? '' : sg.dataset.val; renderSegsV(); return; }
+  const it = e.target.closest('button[data-item]');
+  if (it) { const nome = ITENS_V[Number(it.dataset.item)], ordem = ['', 'S', 'N', 'I']; const prox = ordem[(ordem.indexOf(vEst.itens[nome] || '') + 1) % 4]; vEst.itens[nome] = prox; it.className = 'ckb ' + prox; it.textContent = prox || '—'; return; }
+  const rm = e.target.closest('button[data-rmfoto]');
+  if (rm) { vEst.fotos.splice(Number(rm.dataset.rmfoto), 1); renderFotosV(); }
+});
+formV.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.leg !== undefined) vEst.fotos[Number(e.target.dataset.leg)].leg = e.target.value; });
+
+function reduzFoto(file, lado = 1100, qual = 0.68){
+  return new Promise((ok, err) => {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      const r = Math.min(1, lado / Math.max(im.width, im.height)), w = Math.round(im.width * r), h = Math.round(im.height * r);
+      const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h);
+      const m = Math.min(1, 160 / Math.max(w, h)), c2 = document.createElement('canvas');
+      c2.width = Math.round(w * m); c2.height = Math.round(h * m); c2.getContext('2d').drawImage(c, 0, 0, c2.width, c2.height);
+      URL.revokeObjectURL(url); ok({img: c.toDataURL('image/jpeg', qual), mini: c2.toDataURL('image/jpeg', 0.6), w, h, leg: ''});
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); err(new Error('foto')); };
+    im.src = url;
+  });
+}
+document.getElementById('vAddFoto').addEventListener('click', () => document.getElementById('vFotoIn').click());
+document.getElementById('vFotoIn').addEventListener('change', async e => {
+  const arqs = [...e.target.files]; e.target.value = '';
+  for (const f of arqs) {
+    if (vEst.fotos.length >= 20) { mostra(msgV, 'Limite de 20 fotos por vistoria.', true); break; }
+    try { vEst.fotos.push(await reduzFoto(f)); } catch (_) { mostra(msgV, 'Uma das fotos não pôde ser lida.', true); }
+  }
+  renderFotosV();
+});
+
+const proximoNumeroV = () => { const n = listaV.map(v => parseInt(v.numero, 10)).filter(Number.isFinite); return String((n.length ? Math.max(...n) : 0) + 1); };
+
+function abreFormV(v){
+  document.getElementById('formP').hidden = true;
+  editandoV = v ? v.id : null; confirmaExclusaoV = false;
+  const base = v || {numero: proximoNumeroV(), data: hoje(), hora: new Date().toTimeString().slice(0, 5)};
+  CHAVES_V.forEach(k => { document.getElementById('v_' + k).value = base[k] || ''; });
+  vEst = {itens: {...(base.itens || {})}, motivo: base.motivo || '', comb: base.comb || '', pneus: base.pneus || '', fotos: (base.fotos || []).map(f => ({...f}))};
+  document.getElementById('vPlat').checked = !!base.plat;
+  renderSegsV(); renderItensV(); renderFotosV();
+  document.getElementById('tituloFormV').textContent = v ? 'Editar vistoria' : 'Nova vistoria';
+  document.getElementById('excluiV').hidden = !v;
+  document.getElementById('excluiV').textContent = 'Excluir vistoria';
+  mostra(msgV, '', false);
+  formV.hidden = false;
+  padCli.ajusta(base.assCli); padMot.ajusta(base.assMot);
+  document.getElementById('blocoEnt').hidden = !v;
+  const ent = v && v.ent;
+  eEst = {ativo: false, itens: {...((ent && ent.itens) || {})}, fotos: ((ent && ent.fotos) || []).map(f => ({...f}))};
+  Object.entries(EF).forEach(([k, id]) => { document.getElementById(id).value = (ent && ent[k]) || ''; });
+  mostraEnt(!!ent, ent);
+  formV.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+function fechaFormV(){ formV.hidden = true; editandoV = null; confirmaExclusaoV = false; }
+
+function coletaV(){
+  const prev = listaV.find(x => x.id === editandoV) || {};
+  const v = {id: editandoV || 'v' + novoId(), criado: prev.criado || Date.now()};
+  CHAVES_V.forEach(k => { v[k] = document.getElementById('v_' + k).value.trim(); });
+  v.placa = v.placa.toUpperCase();
+  v.pdfEm = prev.pdfEm; v.fotosLimpas = prev.fotosLimpas;
+  Object.assign(v, {motivo: vEst.motivo, plat: document.getElementById('vPlat').checked, comb: vEst.comb, pneus: vEst.pneus,
+                    itens: vEst.itens, fotos: vEst.fotos, assCli: padCli.dados(), assMot: padMot.dados()});
+  v.assEm = (v.assCli || v.assMot) ? (prev.assEm || new Date().toISOString()) : '';
+  if (eEst.ativo) {
+    const ent = {itens: eEst.itens, fotos: eEst.fotos, assRec: padRec.dados(), assMot: padMotE.dados()};
+    Object.entries(EF).forEach(([k, id]) => { ent[k] = document.getElementById(id).value.trim(); });
+    ent.assEm = (ent.assRec || ent.assMot) ? ((prev.ent || {}).assEm || new Date().toISOString()) : '';
+    v.ent = ent;
+  }
+  return v;
+}
+async function salvaV(){
+  const v = coletaV();
+  if (!v.placa && !v.veic) { mostra(msgV, 'Informe o veículo ou a placa.', true); return null; }
+  try { await gravaV(v); } catch (_) { mostra(msgV, 'Não foi possível salvar. Tente com menos fotos.', true); return null; }
+  editandoV = v.id;
+  listaV = listaV.filter(x => x.id !== v.id).concat(v);
+  renderListaV();
+  document.getElementById('tituloFormV').textContent = 'Editar vistoria';
+  document.getElementById('excluiV').hidden = false;
+  document.getElementById('blocoEnt').hidden = false;
+  return v;
+}
+
+const cardV = v => v.tipo === 'papel' ? cardP(v) : `
+  <div class="card vist">
+    <div class="top"><span>Nº ${esc(v.numero) || '-'} · ${dt(v.data)}</span><span class="etq ${v.assCli ? 'pago' : 'aberto'}">${v.assCli ? 'Assinada' : 'Sem assinatura'}</span></div>
+    <div class="vcorpo">${(v.fotos || [])[0] ? `<img class="thumbv" src="${v.fotos[0].mini || v.fotos[0].img}" alt="">` : ''}<div>
+      <div class="title">${esc(v.veic) || 'Veículo'} ${esc(v.placa)}</div>
+      <div class="sub">${esc(v.cia) || 'Particular'}${v.prop ? ' · ' + esc(v.prop) : ''}</div>
+      <div class="sub">${(v.fotos || []).length} foto(s)${v.ent ? ' · entregue' + (v.ent.assRec ? ' e assinada' : '') : ''}</div>
+    </div></div>
+    <div class="acoes"><button class="btn mini sec" type="button" data-abrir-v="${esc(v.id)}">Abrir</button><button class="btn mini ok" type="button" data-pdf-v="${esc(v.id)}">PDF</button><button class="btn mini perigo" type="button" data-del-v="${esc(v.id)}">${excluiPendV === v.id ? 'Toque de novo para excluir' : 'Excluir'}</button></div>
+  </div>`;
+const showV = makeList(document.getElementById('listV'), document.getElementById('maisV'), document.getElementById('contV'), cardV);
+const buscaV = document.getElementById('buscaV');
+function renderListaV(){
+  const q = buscaV.value.trim().toLowerCase();
+  const l = listaV.slice().sort((a, b) => (b.criado || 0) - (a.criado || 0));
+  showV(q ? l.filter(v => [v.numero, v.placa, v.prop, v.veic, v.cia, v.data].join(' ').toLowerCase().includes(q)) : l);
+  atualizaEspaco();
+}
+buscaV.addEventListener('input', renderListaV);
+async function carregaV(){
+  try { listaV = await todasV(); } catch (_) { mostra(msgListaV, 'Este navegador não permite guardar vistorias.', true); }
+  renderListaV();
+}
+
+/* ---------- PDF ---------- */
+const JSPDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+function carregaJsPDF(){
+  return window.jspdf ? Promise.resolve() : new Promise((ok, err) => {
+    const sc = document.createElement('script');
+    sc.src = JSPDF_URL; sc.crossOrigin = 'anonymous';
+    sc.onload = ok; sc.onerror = () => err(new Error('offline'));
+    document.head.appendChild(sc);
+  });
+}
+document.querySelector('nav button[data-tab="vist"]').addEventListener('click', () => carregaJsPDF().catch(() => {}));
+
+function montaPDF(v){
+  const {jsPDF} = window.jspdf;
+  const d = new jsPDF({unit: 'mm', format: 'a4'});
+  const W = 210, M = 10;
+  let y = 12;
+  const nova = h => { if (y + h > 282) { d.addPage(); y = 12; } };
+  const br = s => s ? s.split('-').reverse().join('/') : '';
+  const campo = (x, w, rot, val) => {
+    d.setFont('helvetica', 'normal'); d.setFontSize(7); d.setTextColor(110); d.text(rot.toUpperCase(), x, y);
+    d.setFontSize(10); d.setTextColor(0);
+    const L = d.splitTextToSize(String(val || '-'), w - 2); d.text(L, x, y + 4.5);
+    return 4.5 + L.length * 4.4;
+  };
+  const linha = (...cols) => {
+    nova(14); let h = 0;
+    cols.forEach(c => { h = Math.max(h, campo(...c)); });
+    d.setDrawColor(200); d.line(M, y + h + 0.5, W - M, y + h + 0.5); y += h + 3;
+  };
+  const assina = lista => {
+    nova(42);
+    lista.forEach(([x, rot, nome, doc, img]) => {
+      d.setDrawColor(150); d.rect(x, y, 92, 28);
+      if (img) { const p = d.getImageProperties(img), k = Math.min(88 / p.width, 24 / p.height), w = p.width * k, h = p.height * k; d.addImage(img, 'PNG', x + (92 - w) / 2, y + 2 + (24 - h) / 2, w, h); }
+      d.setFont('helvetica', 'bold'); d.setFontSize(8); d.setTextColor(0); d.text(rot, x, y + 32);
+      d.setFont('helvetica', 'normal'); d.text('Nome: ' + (nome || '-') + '   Documento: ' + (doc || '-'), x, y + 36);
+    });
+    y += 38;
+  };
+  const fotosPDF = (titulo, lista) => {
+    lista = lista.filter(f => f.img);
+    if (!lista.length) return;
+    d.addPage(); y = 12;
+    d.setFont('helvetica', 'bold'); d.setFontSize(11); d.setTextColor(0); d.text(titulo, M, y); y += 6;
+    lista.forEach((f, i) => {
+      const col = i % 2; if (col === 0) nova(80);
+      const x = M + col * 95, k = Math.min(92 / f.w, 68 / f.h);
+      d.addImage(f.img, 'JPEG', x, y, f.w * k, f.h * k);
+      d.setFont('helvetica', 'normal'); d.setFontSize(8); d.setTextColor(60);
+      d.text(d.splitTextToSize((i + 1) + '. ' + (f.leg || ''), 92), x, y + 72);
+      if (col === 1 || i === lista.length - 1) y += 80;
+    });
+  };
+  d.setFont('helvetica', 'bold'); d.setFontSize(16); d.setTextColor(0);
+  d.text('EDCAR MECÂNICA E GUINCHO', M, y + 5);
+  d.setFontSize(12); d.text('FICHA DE VISTORIA', W - M, y + 3, {align: 'right'});
+  d.setTextColor(190, 30, 30); d.setFontSize(13); d.text('Nº ' + (v.numero || '-'), W - M, y + 9, {align: 'right'});
+  d.setTextColor(60); d.setFont('helvetica', 'normal'); d.setFontSize(8);
+  d.text('Av. Adhemar de Barros, 125 - Centro - Iguape/SP', M, y + 10);
+  d.text('Edelson: (13) 99793-8599  |  Euzilene: (13) 99757-3987  |  Comercial: (13) 3841-2231  |  edelson06@hotmail.com', M, y + 14);
+  d.setDrawColor(0); d.setLineWidth(0.5); d.line(M, y + 17, W - M, y + 17); d.setLineWidth(0.2);
+  y += 21;
+
+  const A = M, B = M + 95, w2 = 92;
+  linha([A, w2, 'Data / hora', br(v.data) + (v.hora ? ' às ' + v.hora : '')], [B, w2, 'Seguradora / Cia', v.cia || 'Particular']);
+  linha([A, w2, 'Atendente', v.atendente], [B, w2, 'Assistência', v.assist]);
+  linha([A, w2, 'Motivo da chamada', (v.motivo || '-') + (v.plat ? ' (remoção c/ plataforma)' : '')], [B, w2, 'Km saída / km chegada', (v.kmSaida || '-') + ' / ' + (v.kmChegada || '-')]);
+  linha([A, w2, 'Proprietário', v.prop], [B, w2, 'Telefone', v.tel]);
+  linha([A, w2, 'Veículo', v.veic], [B, w2, 'Placa', v.placa]);
+  linha([A, 60, 'Ano', v.ano], [A + 63, 60, 'Cor', v.cor], [A + 126, 60, 'KM do veículo', v.km]);
+  linha([A, 190, 'Local de atendimento', v.atend]);
+  linha([A, 190, 'Destino', v.dest]);
+
+  nova(70);
+  d.setFont('helvetica', 'bold'); d.setFontSize(9); d.setTextColor(0); d.text('ACESSÓRIOS / EQUIPAMENTOS EXISTENTES', M, y);
+  d.setFont('helvetica', 'normal'); d.setFontSize(7); d.setTextColor(110);
+  d.text('S = sim, existente   N = não, não existente   I = incompleto ou avariado', W - M, y, {align: 'right'});
+  y += 4;
+  ITENS_V.forEach((nome, i) => {
+    const x = M + Math.floor(i / 10) * 64, yy = y + (i % 10) * 5.2 + 3.5;
+    d.setFont('helvetica', 'normal'); d.setFontSize(8.5); d.setTextColor(0); d.text(nome, x, yy);
+    d.setFont('helvetica', 'bold'); d.text((v.itens || {})[nome] || '-', x + 57, yy, {align: 'center'});
+    d.setDrawColor(225); d.line(x, yy + 1.5, x + 60, yy + 1.5);
+  });
+  y += 52 + 4;
+  linha([A, w2, 'Combustível', v.comb], [B, w2, 'Pneus', v.pneus]);
+
+  nova(30);
+  d.setFont('helvetica', 'bold'); d.setFontSize(9); d.setTextColor(0); d.text('OBSERVAÇÕES / AVARIAS', M, y); y += 4;
+  d.setFont('helvetica', 'normal'); d.setFontSize(10);
+  const L = d.splitTextToSize(v.obs || '-', W - 2 * M);
+  nova(L.length * 4.5 + 4); d.text(L, M, y + 3); y += L.length * 4.5 + 6;
+
+  nova(62);
+  d.setFont('helvetica', 'bold'); d.setFontSize(8.5); d.text('O MOTORISTA NÃO ESTÁ AUTORIZADO A INDICAR A OFICINA.', M, y); y += 4;
+  d.setFont('helvetica', 'normal'); d.setFontSize(8);
+  const t = d.splitTextToSize('Não nos responsabilizamos por pertences deixados no interior do veículo. Declaro que li, entendi e estou de acordo com as informações contidas neste formulário.', W - 2 * M);
+  d.text(t, M, y); y += t.length * 3.6 + 3;
+  assina([[A, 'Cliente / responsável', v.nomeCli, v.rgCli, v.assCli], [B, 'Motorista', v.nomeMot, v.rgMot, v.assMot]]);
+  if (v.assEm) { d.setFontSize(7); d.setTextColor(110); d.text('Assinado em ' + new Date(v.assEm).toLocaleString('pt-BR'), M, y); y += 4; }
+  if (v.fotosLimpas) { d.setFontSize(7); d.setTextColor(110); d.text('Fotos originais removidas do aparelho para liberar espaço.', M, y); y += 4; }
+
+  fotosPDF(v.ent ? 'FOTOS DA RETIRADA' : 'FOTOS DO VEÍCULO', v.fotos || []);
+
+  const en = v.ent;
+  if (en) {
+    d.addPage(); y = 12;
+    d.setFont('helvetica', 'bold'); d.setFontSize(14); d.setTextColor(0); d.text('ENTREGA NO DESTINO', M, y + 5);
+    d.setTextColor(190, 30, 30); d.setFontSize(12); d.text('Vistoria Nº ' + (v.numero || '-'), W - M, y + 5, {align: 'right'});
+    d.setDrawColor(0); d.setLineWidth(0.5); d.line(M, y + 8, W - M, y + 8); d.setLineWidth(0.2); y += 12;
+    linha([A, w2, 'Data / hora da entrega', br(en.data) + (en.hora ? ' às ' + en.hora : '')], [B, w2, 'Veículo / placa', (v.veic || '-') + ' - ' + (v.placa || '-')]);
+    linha([A, 190, 'Destino', v.dest]);
+    nova(70);
+    d.setFont('helvetica', 'bold'); d.setFontSize(9); d.setTextColor(0); d.text('ACESSÓRIOS / EQUIPAMENTOS NA ENTREGA', M, y);
+    d.setFont('helvetica', 'normal'); d.setFontSize(7); d.setTextColor(110);
+    d.text('Em vermelho: diferente da retirada (retirada > entrega)', W - M, y, {align: 'right'});
+    y += 4;
+    const difs = [];
+    ITENS_V.forEach((nome, i) => {
+      const x = M + Math.floor(i / 10) * 64, yy = y + (i % 10) * 5.2 + 3.5;
+      const o = (v.itens || {})[nome] || '', e = (en.itens || {})[nome] || '', dif = o !== e;
+      if (dif) difs.push(nome + ' (' + (o || '-') + ' > ' + (e || '-') + ')');
+      if (dif) d.setTextColor(190, 30, 30); else d.setTextColor(0);
+      d.setFont('helvetica', 'normal'); d.setFontSize(8.5); d.text(nome, x, yy);
+      d.setFont('helvetica', 'bold'); d.text(dif ? (o || '-') + ' > ' + (e || '-') : (e || '-'), x + 59, yy, {align: 'right'});
+      d.setDrawColor(225); d.line(x, yy + 1.5, x + 60, yy + 1.5);
+    });
+    y += 52 + 4;
+    if (difs.length) {
+      const L1 = d.splitTextToSize(difs.join('; '), W - 2 * M);
+      nova(L1.length * 4.2 + 8);
+      d.setFont('helvetica', 'bold'); d.setFontSize(9); d.setTextColor(0); d.text('DIVERGÊNCIAS EM RELAÇÃO À RETIRADA', M, y); y += 4;
+      d.setFont('helvetica', 'normal'); d.setFontSize(9); d.text(L1, M, y + 3); y += L1.length * 4.2 + 5;
+    }
+    nova(30);
+    d.setFont('helvetica', 'bold'); d.setFontSize(9); d.setTextColor(0); d.text('OBSERVAÇÕES DA ENTREGA', M, y); y += 4;
+    d.setFont('helvetica', 'normal'); d.setFontSize(10);
+    const L2 = d.splitTextToSize(en.obs || '-', W - 2 * M);
+    nova(L2.length * 4.5 + 4); d.text(L2, M, y + 3); y += L2.length * 4.5 + 6;
+    assina([[A, 'Quem recebeu o veículo', en.nomeRec, en.docRec, en.assRec], [B, 'Motorista', en.nomeMot, en.docMot, en.assMot]]);
+    if (en.assEm) { d.setFontSize(7); d.setTextColor(110); d.text('Assinado em ' + new Date(en.assEm).toLocaleString('pt-BR'), M, y); y += 4; }
+    fotosPDF('FOTOS DA ENTREGA', en.fotos || []);
+  }
+  const n = d.getNumberOfPages();
+  for (let p = 1; p <= n; p++) {
+    d.setPage(p); d.setFont('helvetica', 'normal'); d.setFontSize(7); d.setTextColor(130);
+    d.text('Edcar Mecânica e Guincho - Vistoria Nº ' + (v.numero || '-') + ' - página ' + p + '/' + n, W / 2, 291, {align: 'center'});
+  }
+  return d;
+}
+
+async function exportaPDF(v, msg){
+  try {
+    mostra(msg, 'Gerando PDF...', false);
+    await carregaJsPDF();
+    const blob = (v.tipo === 'papel' ? montaPDFPapel(v) : montaPDF(v)).output('blob');
+    const nome = (v.tipo === 'papel' ? 'Ficha-' : 'Vistoria-') + (v.numero || 'sn') + '-' + (v.placa || 'veiculo').replace(/[^A-Za-z0-9]/g, '') + '.pdf';
+    const arq = new File([blob], nome, {type: 'application/pdf'});
+    if (navigator.canShare && navigator.canShare({files: [arq]})) {
+      try { await navigator.share({files: [arq], title: nome}); marcaPdf(v); mostra(msg, '', false); return; }
+      catch (e) { if (e.name === 'AbortError') { mostra(msg, '', false); return; } }
+    }
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    marcaPdf(v);
+    mostra(msg, 'PDF baixado. Procure em Arquivos > Downloads e envie ao cliente.', false);
+  } catch (_) { mostra(msg, 'Não foi possível gerar o PDF. Verifique a internet e tente de novo.', true); }
+}
+
+document.getElementById('abreFormV').addEventListener('click', () => { if (!formV.hidden && editandoV === null) { fechaFormV(); return; } abreFormV(null); });
+document.getElementById('cancelaV').addEventListener('click', fechaFormV);
+document.getElementById('salvaV').addEventListener('click', async () => { const v = await salvaV(); if (v) mostra(msgV, 'Vistoria salva.', false); });
+document.getElementById('pdfV').addEventListener('click', async () => { const v = await salvaV(); if (v) exportaPDF(v, msgV); });
+document.getElementById('excluiV').addEventListener('click', async () => {
+  const btn = document.getElementById('excluiV');
+  if (!confirmaExclusaoV) { confirmaExclusaoV = true; btn.textContent = 'Toque de novo para excluir'; mostra(msgV, 'Confirme para excluir esta vistoria e as fotos.', true); return; }
+  try { await apagaV(editandoV); listaV = listaV.filter(x => x.id !== editandoV); } catch (_) {}
+  fechaFormV(); renderListaV();
+});
+document.getElementById('listV').addEventListener('click', async e => {
+  const dl = e.target.closest('button[data-del-v]');
+  if (dl) {
+    const id = dl.dataset.delV;
+    if (excluiPendV !== id) { excluiPendV = id; renderListaV(); return; }
+    excluiPendV = '';
+    try { await apagaV(id); listaV = listaV.filter(x => x.id !== id); if (editandoV === id) fechaFormV(); if (editandoP === id) fechaFormP(); }
+    catch (_) { mostra(msgListaV, 'Não foi possível excluir a vistoria.', true); }
+    renderListaV(); return;
+  }
+  const ab = e.target.closest('button[data-abrir-v]'), pd = e.target.closest('button[data-pdf-v]');
+  if (ab) { const v = listaV.find(x => x.id === ab.dataset.abrirV); if (v) { if (v.tipo === 'papel') abreFormP(v); else abreFormV(v); } }
+  if (pd) { const v = listaV.find(x => x.id === pd.dataset.pdfV); if (v) exportaPDF(v, msgListaV); }
+});
+/* ---------- ficha em papel (só fotos) ---------- */
+const marcaPdf = v => { v.pdfEm = Date.now(); gravaV(v).catch(() => {}); };
+let editandoP = null, confirmaExclusaoP = false, pFotos = [];
+const formP = document.getElementById('formP'), msgP = document.getElementById('msgP');
+const CAMPOS_P = ['numero', 'data', 'placa', 'veic', 'cia', 'prop', 'obs'];
+
+function cardP(v){
+  const f = (v.fotos || [])[0];
+  return `
+  <div class="card vist">
+    <div class="top"><span>Nº ${esc(v.numero) || '-'} · ${dt(v.data)}</span><span class="etq aberto">Papel</span></div>
+    <div class="vcorpo">${f ? `<img class="thumbv" src="${f.mini || f.img}" alt="">` : ''}<div>
+      <div class="title">${esc(v.veic) || 'Veículo'} ${esc(v.placa)}</div>
+      <div class="sub">${esc(v.cia) || 'Particular'}${v.prop ? ' · ' + esc(v.prop) : ''}</div>
+      <div class="sub">${(v.fotos || []).length} foto(s) da ficha${v.fotosLimpas ? ' · fotos limpas' : ''}</div>
+    </div></div>
+    <div class="acoes"><button class="btn mini sec" type="button" data-abrir-v="${esc(v.id)}">Abrir</button><button class="btn mini ok" type="button" data-pdf-v="${esc(v.id)}">PDF</button><button class="btn mini perigo" type="button" data-del-v="${esc(v.id)}">${excluiPendV === v.id ? 'Toque de novo para excluir' : 'Excluir'}</button></div>
+  </div>`;
+}
+function renderFotosP(){
+  document.getElementById('pFotos').innerHTML = pFotos.map((f, i) => `<div class="fotov"><img src="${f.mini || f.img}" alt="Foto ${i + 1}"><div><input type="text" placeholder="Ex.: frente, verso, entrega" value="${esc(f.leg || '')}" data-leg-p="${i}"><button class="btn mini perigo" type="button" data-rmfoto-p="${i}">Remover foto</button></div></div>`).join('');
+}
+formP.addEventListener('click', e => {
+  const rm = e.target.closest('button[data-rmfoto-p]');
+  if (rm) { pFotos.splice(Number(rm.dataset.rmfotoP), 1); renderFotosP(); }
+});
+formP.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.legP !== undefined) pFotos[Number(e.target.dataset.legP)].leg = e.target.value; });
+document.getElementById('pAddFoto').addEventListener('click', () => document.getElementById('pFotoIn').click());
+document.getElementById('pFotoIn').addEventListener('change', async ev => {
+  const arqs = [...ev.target.files]; ev.target.value = '';
+  for (const f of arqs) {
+    if (pFotos.length >= 20) { mostra(msgP, 'Limite de 20 fotos por ficha.', true); break; }
+    try { pFotos.push(await reduzFoto(f, 1800, 0.8)); } catch (_) { mostra(msgP, 'Uma das fotos não pôde ser lida.', true); }
+  }
+  renderFotosP();
+});
+function abreFormP(v){
+  fechaFormV();
+  editandoP = v ? v.id : null; confirmaExclusaoP = false;
+  CAMPOS_P.forEach(k => { document.getElementById('p_' + k).value = (v ? v[k] : (k === 'data' ? hoje() : '')) || ''; });
+  pFotos = ((v && v.fotos) || []).map(f => ({...f}));
+  renderFotosP();
+  document.getElementById('tituloFormP').textContent = v ? 'Editar ficha em papel' : 'Ficha em papel';
+  document.getElementById('excluiP').hidden = !v;
+  document.getElementById('excluiP').textContent = 'Excluir ficha';
+  mostra(msgP, '', false);
+  formP.hidden = false;
+  formP.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+function fechaFormP(){ formP.hidden = true; editandoP = null; confirmaExclusaoP = false; }
+async function salvaP(){
+  const prev = listaV.find(x => x.id === editandoP) || {};
+  const v = {id: editandoP || 'v' + novoId(), tipo: 'papel', criado: prev.criado || Date.now(), pdfEm: prev.pdfEm, fotosLimpas: prev.fotosLimpas, fotos: pFotos};
+  CAMPOS_P.forEach(k => { v[k] = document.getElementById('p_' + k).value.trim(); });
+  v.placa = v.placa.toUpperCase();
+  if (!v.numero) { mostra(msgP, 'Informe o número impresso na ficha.', true); return null; }
+  if (!pFotos.length) { mostra(msgP, 'Anexe ao menos uma foto da ficha.', true); return null; }
+  try { await gravaV(v); } catch (_) { mostra(msgP, 'Não foi possível salvar. Tente com menos fotos.', true); return null; }
+  editandoP = v.id;
+  listaV = listaV.filter(x => x.id !== v.id).concat(v);
+  renderListaV();
+  document.getElementById('tituloFormP').textContent = 'Editar ficha em papel';
+  document.getElementById('excluiP').hidden = false;
+  return v;
+}
+document.getElementById('abreFormP').addEventListener('click', () => { if (!formP.hidden && editandoP === null) { fechaFormP(); return; } abreFormP(null); });
+document.getElementById('cancelaP').addEventListener('click', fechaFormP);
+document.getElementById('salvaP').addEventListener('click', async () => { const v = await salvaP(); if (v) mostra(msgP, 'Ficha salva.', false); });
+document.getElementById('pdfP').addEventListener('click', async () => { const v = await salvaP(); if (v) exportaPDF(v, msgP); });
+document.getElementById('excluiP').addEventListener('click', async () => {
+  const b = document.getElementById('excluiP');
+  if (!confirmaExclusaoP) { confirmaExclusaoP = true; b.textContent = 'Toque de novo para excluir'; mostra(msgP, 'Confirme para excluir esta ficha e as fotos.', true); return; }
+  try { await apagaV(editandoP); listaV = listaV.filter(x => x.id !== editandoP); } catch (_) {}
+  fechaFormP(); renderListaV();
+});
+
+function montaPDFPapel(v){
+  const {jsPDF} = window.jspdf;
+  const d = new jsPDF({unit: 'mm', format: 'a4'});
+  const W = 210, M = 10, br = x => x ? x.split('-').reverse().join('/') : '-';
+  d.setFont('helvetica', 'bold'); d.setFontSize(15); d.setTextColor(0); d.text('EDCAR MECÂNICA E GUINCHO', M, 17);
+  d.setFontSize(11); d.text('FICHA DE VISTORIA (PAPEL)', W - M, 14, {align: 'right'});
+  d.setTextColor(190, 30, 30); d.setFontSize(13); d.text('Nº ' + (v.numero || '-'), W - M, 20, {align: 'right'});
+  d.setDrawColor(0); d.setLineWidth(0.5); d.line(M, 23, W - M, 23); d.setLineWidth(0.2);
+  d.setTextColor(0); d.setFont('helvetica', 'normal'); d.setFontSize(11);
+  ['Data: ' + br(v.data), 'Seguradora / Cia: ' + (v.cia || 'Particular'), 'Proprietário / cliente: ' + (v.prop || '-'), 'Veículo: ' + (v.veic || '-') + '    Placa: ' + (v.placa || '-')]
+    .forEach((t, i) => d.text(t, M, 32 + i * 6));
+  let y = 32 + 4 * 6 + 2;
+  if (v.obs) { const L = d.splitTextToSize('Obs.: ' + v.obs, W - 2 * M); d.text(L, M, y); y += L.length * 5; }
+  const fotos = (v.fotos || []).filter(f => f.img);
+  d.setFontSize(9); d.setTextColor(110);
+  d.text(fotos.length ? 'As páginas seguintes mostram as fotos da ficha preenchida em papel.' : 'Fotos originais removidas do aparelho para liberar espaço.', M, y + 4);
+  fotos.forEach((f, i) => {
+    d.addPage();
+    const k = Math.min(190 / f.w, 255 / f.h), w = f.w * k, h = f.h * k;
+    d.setFont('helvetica', 'normal'); d.setFontSize(8); d.setTextColor(60);
+    d.text((i + 1) + '/' + fotos.length + (f.leg ? ' - ' + f.leg : ''), M, 12);
+    d.addImage(f.img, 'JPEG', (W - w) / 2, 16, w, h);
+  });
+  const n = d.getNumberOfPages();
+  for (let p = 1; p <= n; p++) {
+    d.setPage(p); d.setFont('helvetica', 'normal'); d.setFontSize(7); d.setTextColor(130);
+    d.text('Edcar Mecânica e Guincho - Ficha Nº ' + (v.numero || '-') + ' - página ' + p + '/' + n, W / 2, 291, {align: 'center'});
+  }
+  return d;
+}
+
+/* ---------- espaço, limpeza e backup das vistorias ---------- */
+const fotosDe = v => [...(v.fotos || []), ...((v.ent && v.ent.fotos) || [])];
+const tamV = v => fotosDe(v).reduce((t, f) => t + (f.img || '').length + (f.mini || '').length, 0)
+  + (v.assCli || '').length + (v.assMot || '').length + (v.ent ? (v.ent.assRec || '').length + (v.ent.assMot || '').length : 0) + 2000;
+const fmtMB = b => (b / 1048576).toFixed(b < 10485760 ? 1 : 0).replace('.', ',') + ' MB';
+function atualizaEspaco(){
+  const tot = listaV.reduce((t, v) => t + tamV(v), 0), aviso = document.getElementById('avisoEspaco');
+  document.getElementById('espacoTxt').textContent = listaV.length + ' registro(s) usando cerca de ' + fmtMB(tot) + '.';
+  aviso.hidden = tot < 500 * 1048576;
+  aviso.textContent = 'Atenção: as vistorias já passam de 500 MB. Guarde os PDFs e limpe as fotos antigas (veja Espaço e backup, mais abaixo).';
+}
+const limpaFotos = v => { fotosDe(v).forEach(f => { f.img = ''; }); v.fotosLimpas = true; };
+const podeLimpar = (v, dias) => v.pdfEm && (Date.now() - (v.criado || 0)) > dias * 864e5 && fotosDe(v).some(f => f.img);
+let confirmaLimpa = false;
+document.getElementById('limpaFotosV').addEventListener('click', async () => {
+  const dias = Number(document.getElementById('diasLimpa').value), alvo = listaV.filter(v => podeLimpar(v, dias));
+  const msg = document.getElementById('msgEspaco'), b = document.getElementById('limpaFotosV');
+  if (!alvo.length) { confirmaLimpa = false; b.textContent = 'Limpar fotos antigas'; mostra(msg, 'Nenhuma vistoria com mais de ' + dias + ' dias e PDF já gerado.', false); return; }
+  if (!confirmaLimpa) { confirmaLimpa = true; b.textContent = 'Toque de novo: limpar ' + alvo.length + ' vistoria(s)'; return; }
+  confirmaLimpa = false; b.textContent = 'Limpar fotos antigas';
+  try { for (const v of alvo) { limpaFotos(v); await gravaV(v); } mostra(msg, 'Fotos de ' + alvo.length + ' vistoria(s) limpas.', false); }
+  catch (_) { mostra(msg, 'Não foi possível limpar tudo.', true); }
+  renderListaV();
+});
+document.getElementById('backupV').addEventListener('click', async () => {
+  const msg = document.getElementById('msgEspaco');
+  if (!listaV.length) { mostra(msg, 'Não há vistorias para salvar.', false); return; }
+  const itens = listaV.map(v => { const c = JSON.parse(JSON.stringify(v, (k, val) => k === 'img' ? '' : val)); c.fotosLimpas = true; return c; });
+  const blob = new Blob([JSON.stringify({tipo: 'vistorias-guincho', versao: 1, criadoEm: new Date().toISOString(), itens})], {type: 'application/json'});
+  const nome = 'vistorias-' + hoje() + '.json', arq = new File([blob], nome, {type: 'application/json'});
+  if (navigator.canShare && navigator.canShare({files: [arq]})) {
+    try { await navigator.share({files: [arq], title: nome}); mostra(msg, 'Backup enviado. As fotos grandes ficam nos PDFs.', false); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  mostra(msg, 'Backup baixado em Arquivos > Downloads. Ele guarda os dados, assinaturas e miniaturas; as fotos grandes ficam nos PDFs.', false);
+});
+document.getElementById('restauraV').addEventListener('click', () => document.getElementById('restauraIn').click());
+document.getElementById('restauraIn').addEventListener('change', async e => {
+  const f = e.target.files[0], msg = document.getElementById('msgEspaco'); e.target.value = '';
+  if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (d.tipo !== 'vistorias-guincho' || !Array.isArray(d.itens)) throw new Error('formato');
+    let n = 0;
+    for (const v of d.itens) { if (v && v.id && !listaV.some(x => x.id === v.id)) { await gravaV(v); listaV.push(v); n++; } }
+    renderListaV();
+    mostra(msg, n + ' vistoria(s) restaurada(s).', false);
+  } catch (_) { mostra(msg, 'Arquivo de backup inválido.', true); }
+});
+
+carregaV();
+
 /* ---------- recálculo geral ---------- */
 function recalcular(){
   servicos = servicosAtuais().sort(byDataDesc);
@@ -1599,6 +2354,28 @@ carregaLocal();
 recalcular();
 iniciaArmazenamento();
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+
+/* ---------- modo sem internet ---------- */
+async function checaOffline(){
+  const el = document.getElementById('offStatus');
+  const semNet = navigator.onLine === false ? 'Sem internet agora. ' : '';
+  try {
+    if (!('serviceWorker' in navigator) || !('caches' in window)) { el.textContent = semNet + 'Modo sem internet: este navegador não suporta.'; return; }
+    const reg = await navigator.serviceWorker.getRegistration();
+    const pdf = await caches.match(JSPDF_URL);
+    el.textContent = semNet + ((reg && reg.active && pdf)
+      ? 'Modo sem internet: pronto. Pode fazer vistorias sem sinal.'
+      : 'Modo sem internet: ainda não pronto. Abra o app com internet e aguarde alguns segundos.');
+  } catch (_) { el.textContent = ''; }
+}
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(() => navigator.serviceWorker.ready).then(() => setTimeout(checaOffline, 1500)).catch(checaOffline);
+  });
+}
+window.addEventListener('online', checaOffline);
+window.addEventListener('offline', checaOffline);
+document.querySelector('nav button[data-tab="vist"]').addEventListener('click', checaOffline);
 </script>
 </body>
 </html>
