@@ -98,6 +98,10 @@ details summary{cursor:pointer;font-size:15px;font-weight:600;padding:6px 0}
 .status.falha{color:#fff;background:#B3412E;font-weight:600}
 .sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .img-rel{display:none;width:100%;margin-top:12px;border-radius:12px;border:1px solid var(--line);background:#fff}
+nav button{font-size:14px;padding:11px 2px}
+.stat.verde b{color:var(--green)}
+.card.taxi{border-left:5px solid var(--amber)}
+.seg.tres button{padding:13px 4px;font-size:15px}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -120,6 +124,7 @@ details summary{cursor:pointer;font-size:15px;font-weight:600;padding:6px 0}
     <button role="tab" data-tab="serv" aria-selected="true">Serviços</button>
     <button role="tab" data-tab="comis" aria-selected="false">Comissões</button>
     <button role="tab" data-tab="caixa" aria-selected="false">Caixa</button>
+    <button role="tab" data-tab="taxi" aria-selected="false">Táxi</button>
   </nav>
 
   <!-- SERVIÇOS -->
@@ -242,6 +247,75 @@ details summary{cursor:pointer;font-size:15px;font-weight:600;padding:6px 0}
     <p class="msg" id="msgRel" role="status"></p>
   </section>
 
+  <!-- TÁXI -->
+  <section id="taxi" hidden>
+    <p class="explica">Corridas de táxi são só suas: <b>não entram nas Comissões, no Caixa nem nos relatórios do sócio</b>.</p>
+    <div class="seg tres" id="segTaxiPer">
+      <button type="button" data-per="mes" aria-pressed="true">Este mês</button>
+      <button type="button" data-per="ant" aria-pressed="false">Mês passado</button>
+      <button type="button" data-per="tudo" aria-pressed="false">Tudo</button>
+    </div>
+    <div class="rel-campos">
+      <div><label for="tpDe">De</label><input id="tpDe" type="date"></div>
+      <div><label for="tpAte">Até</label><input id="tpAte" type="date"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span>Corridas</span><b id="xQtd">0</b></div>
+      <div class="stat"><span>Receita</span><b class="in" id="xRec">R$ 0,00</b></div>
+      <div class="stat"><span>Despesas</span><b class="out" id="xDesp">R$ 0,00</b></div>
+      <div class="stat verde"><span>Líquido</span><b id="xLiq">R$ 0,00</b></div>
+      <div class="stat full"><span>A receber no período</span><b id="xAbr">R$ 0,00</b></div>
+    </div>
+
+    <details class="form" id="resumoTaxi">
+      <summary>Por seguradora neste período</summary>
+      <div id="listaResumoTaxi"></div>
+    </details>
+
+    <button class="btn sec" id="abreFormT" type="button">Nova corrida</button>
+    <div class="form" id="formT" hidden>
+      <h2 class="titulo-form" id="tituloFormT">Nova corrida</h2>
+      <label for="tData">Data</label>
+      <input id="tData" type="date">
+      <label for="tCli">Passageiro / cliente</label>
+      <input id="tCli" type="text">
+      <div class="grid2">
+        <div><label for="tSaida">Saída</label><input id="tSaida" type="text"></div>
+        <div><label for="tDest">Destino</label><input id="tDest" type="text"></div>
+      </div>
+      <label for="tCia">Seguradora <small>(vazio = particular)</small></label>
+      <input id="tCia" type="text" list="listaCias" autocomplete="off">
+      <div class="grid2">
+        <div><label for="tValor">Valor (R$)</label><input id="tValor" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00"></div>
+        <div><label for="tDesp">Despesa (R$)</label><input id="tDesp" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00"></div>
+      </div>
+      <label>Forma de pagamento</label>
+      <div class="seg tres" id="segForma">
+        <button type="button" data-forma="Dinheiro" aria-pressed="false">Dinheiro</button>
+        <button type="button" data-forma="Pix" aria-pressed="false">Pix</button>
+        <button type="button" data-forma="Cartão" aria-pressed="false">Cartão</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="tRecebi"> Já recebi esta corrida</label>
+      <div class="preview">
+        <span>Líquido da corrida</span>
+        <b class="big" id="prevLiqT">R$ 0,00</b>
+      </div>
+      <label for="tObs">Observação</label>
+      <input id="tObs" type="text">
+      <button class="btn" id="salvaT" type="button">Salvar corrida</button>
+      <button class="btn sec" id="cancelaT" type="button">Fechar</button>
+      <button class="btn perigo" id="excluiT" type="button" hidden>Excluir corrida</button>
+      <p class="msg" id="msgT" role="status"></p>
+    </div>
+
+    <label for="buscaT">Buscar</label>
+    <input id="buscaT" type="search" placeholder="Passageiro, saída, destino...">
+    <label class="chk"><input type="checkbox" id="soAbertoT"> Mostrar só o que falta receber</label>
+    <p class="count" id="contT"></p>
+    <div id="listT"></div>
+    <button class="more" id="maisT" hidden>Mostrar mais</button>
+  </section>
+
   <!-- CAIXA -->
   <section id="caixa" hidden>
     <div class="stats">
@@ -354,9 +428,9 @@ const rotuloQuinzena = chave => {
 
 /* ---------- dados locais (somente neste aparelho) ---------- */
 /* Guardados em duas gavetas do navegador (localStorage e IndexedDB). Se uma falhar, a outra segura. */
-let NOVOS = {servicos: [], caixa: [], recebidos: {}, ajustes: {}, pagamentos: [], salvoEm: 0};
+let NOVOS = {servicos: [], caixa: [], recebidos: {}, ajustes: {}, pagamentos: [], taxi: [], salvoEm: 0};
 const estado = {ls: null, idb: null};
-const normaliza = v => ({servicos: v.servicos, caixa: v.caixa, recebidos: v.recebidos || {}, ajustes: v.ajustes || {}, pagamentos: v.pagamentos || [], salvoEm: v.salvoEm || 0});
+const normaliza = v => ({servicos: v.servicos, caixa: v.caixa, recebidos: v.recebidos || {}, ajustes: v.ajustes || {}, pagamentos: v.pagamentos || [], taxi: Array.isArray(v.taxi) ? v.taxi : [], salvoEm: v.salvoEm || 0});
 const valido = v => v && Array.isArray(v.servicos) && Array.isArray(v.caixa);
 
 const IDB = {
@@ -454,7 +528,7 @@ async function iniciaArmazenamento(){
 const tabs = document.querySelectorAll('[role="tab"]');
 tabs.forEach(btn => btn.addEventListener('click', () => {
   tabs.forEach(b => b.setAttribute('aria-selected', b === btn));
-  ['serv','comis','caixa'].forEach(id => document.getElementById(id).hidden = (id !== btn.dataset.tab));
+  ['serv','comis','caixa','taxi'].forEach(id => document.getElementById(id).hidden = (id !== btn.dataset.tab));
 }));
 
 /* ---------- ajuda para tela inicial ---------- */
@@ -580,6 +654,7 @@ document.getElementById('sRecebi').addEventListener('change', atualizaDica);
 function atualizaCias(){
   const set = new Set();
   [...BASE.servicos, ...NOVOS.servicos].forEach(x => { const c = (NOVOS.ajustes[x.id]?.cia ?? x.cia); if (c) set.add(c); });
+  (NOVOS.taxi || []).forEach(x => { if (x.cia) set.add(x.cia); });
   document.getElementById('listaCias').innerHTML = [...set].sort().map(c => `<option value="${esc(c)}">`).join('');
 }
 
@@ -1199,6 +1274,195 @@ document.getElementById('listC').addEventListener('click', e => {
   mostra(msg, ok ? 'Lançamento excluído.' : 'Não foi possível salvar neste navegador. Faça um backup.', !ok);
 });
 
+/* ---------- táxi (só seu: fica fora das Comissões, do Caixa e dos relatórios do sócio) ---------- */
+let editandoT = null, confirmaExclusaoT = false, formaT = '', baixaPend = '';
+/* sem marcação: particular conta como recebido, seguradora como a receber */
+const recebidoT = x => x.recebido === undefined ? !x.cia : !!x.recebido;
+const elTValor = document.getElementById('tValor'), elTDesp = document.getElementById('tDesp');
+const formT = document.getElementById('formT');
+const CAMPOS_T = ['tData','tCli','tCia','tSaida','tDest','tValor','tDesp','tObs'];
+
+const renderTaxi = x => {
+  const liq = (x.valor || 0) - (x.despesa || 0);
+  return `
+  <div class="card taxi${recebidoT(x) ? ' pago' : ''}">
+    <div class="top"><span>${dt(x.data)}</span>${recebidoT(x) ? '<span class="etq pago">Recebido</span>' : '<span class="etq aberto">A receber</span>'}</div>
+    <div class="title">${esc(x.cliente) || 'Corrida'}</div>
+    <div class="sub">${esc(x.saida) || '?'} → ${esc(x.destino) || '?'}</div>
+    <div class="sub"><b>${x.cia ? esc(x.cia) : 'Particular'}</b>${x.forma ? ' · ' + esc(x.forma) : ''}</div>
+    ${x.obs ? `<div class="sub">${esc(x.obs)}</div>` : ''}
+    <div class="linha-valores">
+      <div><span>Valor </span><b>${fmt(x.valor || 0)}</b></div>
+      ${(x.despesa || 0) > 0 ? `<div><span>Despesa </span><b>${fmt(x.despesa)}</b></div>` : ''}
+      <div><span>Líquido </span><b class="com">${fmt(liq)}</b></div>
+    </div>
+    <div class="acoes"><button class="btn mini sec" data-editar-t="${esc(x.id)}" type="button">Editar</button><button class="btn mini sec" data-toggle-t="${esc(x.id)}" type="button">${recebidoT(x) ? 'Desmarcar recebido' : 'Marcar como recebido'}</button></div>
+  </div>`;
+};
+const showTaxi = makeList(document.getElementById('listT'), document.getElementById('maisT'), document.getElementById('contT'), renderTaxi);
+const buscaT = document.getElementById('buscaT');
+
+const tpDe = document.getElementById('tpDe'), tpAte = document.getElementById('tpAte');
+(function(){ const p = periodoMes(0); tpDe.value = p.de; tpAte.value = p.ate; })();
+
+function renderResumoTaxi(lista){
+  const por = {};
+  lista.forEach(x => {
+    const k = x.cia || 'Particular';
+    const m = por[k] || (por[k] = {n: 0, rec: 0, desp: 0, abr: 0});
+    m.n++; m.rec += x.valor || 0; m.desp += x.despesa || 0;
+    if (!recebidoT(x)) m.abr += x.valor || 0;
+  });
+  const chaves = Object.keys(por).sort((a, b) => por[b].abr - por[a].abr || por[b].rec - por[a].rec);
+  document.getElementById('listaResumoTaxi').innerHTML = chaves.length ? chaves.map(k => {
+    const m = por[k];
+    const chave = `${k}|${tpDe.value}|${tpAte.value}`;
+    return `<div class="card">
+      <div class="title">${esc(k)}</div>
+      <div class="sub">${plural(m.n, 'corrida', 'corridas')}</div>
+      <div class="linha-valores">
+        <div><span>Receita </span><b>${fmt(m.rec)}</b></div>
+        <div><span>Despesas </span><b>${fmt(m.desp)}</b></div>
+        <div><span>Líquido </span><b class="com">${fmt(m.rec - m.desp)}</b></div>
+      </div>
+      <div class="linha-valores"><div><span>A receber </span><b>${fmt(m.abr)}</b></div></div>
+      ${m.abr > 0 ? `<div class="acoes"><button class="btn mini ok" data-baixa-t="${esc(k)}" type="button">${baixaPend === chave ? 'Toque de novo para confirmar' : 'Marcar período como recebido'}</button></div>` : ''}
+    </div>`;
+  }).join('') : '<p class="explica">Nenhuma corrida neste período.</p>';
+}
+
+function renderTaxiTudo(){
+  const de = tpDe.value, ate = tpAte.value;
+  const doPeriodo = (NOVOS.taxi || []).filter(x => (!de || (x.data && x.data >= de)) && (!ate || (x.data && x.data <= ate))).sort(byDataDesc);
+  renderResumoTaxi(doPeriodo);
+  const rec = doPeriodo.reduce((s, x) => s + (x.valor || 0), 0);
+  const desp = doPeriodo.reduce((s, x) => s + (x.despesa || 0), 0);
+  document.getElementById('xQtd').textContent = doPeriodo.length;
+  document.getElementById('xRec').textContent = fmt(rec);
+  document.getElementById('xDesp').textContent = fmt(desp);
+  document.getElementById('xLiq').textContent = fmt(rec - desp);
+  document.getElementById('xAbr').textContent = fmt(doPeriodo.filter(x => !recebidoT(x)).reduce((t, x) => t + (x.valor || 0), 0));
+  const q = buscaT.value.trim().toLowerCase();
+  let vis = document.getElementById('soAbertoT').checked ? doPeriodo.filter(x => !recebidoT(x)) : doPeriodo;
+  if (q) vis = vis.filter(x => [x.data, x.cliente, x.cia, x.saida, x.destino, x.forma, x.obs].join(' ').toLowerCase().includes(q));
+  showTaxi(vis);
+}
+buscaT.addEventListener('input', renderTaxiTudo);
+document.getElementById('soAbertoT').addEventListener('change', renderTaxiTudo);
+const marcaAtalhoT = per => document.querySelectorAll('#segTaxiPer button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.per === per)));
+document.getElementById('segTaxiPer').addEventListener('click', e => {
+  const b = e.target.closest('button[data-per]');
+  if (!b) return;
+  const per = b.dataset.per;
+  if (per === 'tudo') { tpDe.value = ''; tpAte.value = ''; }
+  else { const p = periodoMes(per === 'ant' ? -1 : 0); tpDe.value = p.de; tpAte.value = p.ate; }
+  marcaAtalhoT(per);
+  renderTaxiTudo();
+});
+[tpDe, tpAte].forEach(el => el.addEventListener('input', () => { marcaAtalhoT(''); renderTaxiTudo(); }));
+
+function atualizaFormaT(){
+  document.querySelectorAll('#segForma button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.forma === formaT)));
+}
+document.getElementById('tCia').addEventListener('input', () => { if (editandoT === null) document.getElementById('tRecebi').checked = !document.getElementById('tCia').value.trim(); });
+document.getElementById('segForma').addEventListener('click', e => {
+  const b = e.target.closest('button[data-forma]');
+  if (!b) return;
+  formaT = (formaT === b.dataset.forma) ? '' : b.dataset.forma;
+  atualizaFormaT();
+});
+function atualizaPreviaT(){
+  document.getElementById('prevLiqT').textContent = fmt(num(elTValor.value) - num(elTDesp.value));
+}
+elTValor.addEventListener('input', atualizaPreviaT);
+elTDesp.addEventListener('input', atualizaPreviaT);
+
+function abreFormT(c){
+  editandoT = c ? c.id : null;
+  confirmaExclusaoT = false;
+  const v = {tData: c?.data || hoje(), tCli: c?.cliente || '', tCia: c?.cia || '', tSaida: c?.saida || '', tDest: c?.destino || '',
+             tValor: c?.valor || '', tDesp: c?.despesa || '', tObs: c?.obs || ''};
+  CAMPOS_T.forEach(id => document.getElementById(id).value = v[id]);
+  formaT = c?.forma || '';
+  document.getElementById('tRecebi').checked = c ? recebidoT(c) : true;
+  atualizaFormaT();
+  document.getElementById('tituloFormT').textContent = c ? 'Editar corrida' : 'Nova corrida';
+  document.getElementById('salvaT').textContent = c ? 'Salvar alterações' : 'Salvar corrida';
+  document.getElementById('excluiT').hidden = !c;
+  document.getElementById('excluiT').textContent = 'Excluir corrida';
+  mostra(document.getElementById('msgT'), '', false);
+  formT.hidden = false;
+  atualizaPreviaT();
+  formT.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+function fechaFormT(){ formT.hidden = true; editandoT = null; confirmaExclusaoT = false; }
+
+document.getElementById('abreFormT').addEventListener('click', () => {
+  if (!formT.hidden && editandoT === null) { fechaFormT(); return; }
+  abreFormT(null);
+});
+document.getElementById('cancelaT').addEventListener('click', fechaFormT);
+document.getElementById('listaResumoTaxi').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-baixa-t]');
+  if (!btn) return;
+  const k = btn.dataset.baixaT;
+  const chave = `${k}|${tpDe.value}|${tpAte.value}`;
+  if (baixaPend !== chave) { baixaPend = chave; renderTaxiTudo(); return; }
+  const de = tpDe.value, ate = tpAte.value;
+  (NOVOS.taxi || []).forEach(x => {
+    const dentro = (!de || (x.data && x.data >= de)) && (!ate || (x.data && x.data <= ate));
+    if (dentro && (x.cia || 'Particular') === k && !recebidoT(x)) { x.recebido = true; x.recebidoEm = hoje(); }
+  });
+  baixaPend = '';
+  gravaLocal();
+  renderTaxiTudo();
+});
+document.getElementById('listT').addEventListener('click', e => {
+  const tg = e.target.closest('button[data-toggle-t]');
+  if (tg) {
+    const c = (NOVOS.taxi || []).find(x => x.id === tg.dataset.toggleT);
+    if (c) { c.recebido = !recebidoT(c); c.recebidoEm = c.recebido ? hoje() : ''; gravaLocal(); renderTaxiTudo(); }
+    return;
+  }
+  const btn = e.target.closest('button[data-editar-t]');
+  if (!btn) return;
+  const c = (NOVOS.taxi || []).find(x => x.id === btn.dataset.editarT);
+  if (c) abreFormT(c);
+});
+
+document.getElementById('salvaT').addEventListener('click', () => {
+  const v = id => document.getElementById(id).value.trim();
+  const msg = document.getElementById('msgT');
+  const valor = num(v('tValor')), despesa = num(v('tDesp'));
+  if (valor <= 0) { mostra(msg, 'Informe o valor da corrida.', true); return; }
+  if (despesa > valor) { mostra(msg, 'A despesa é maior que o valor. Confira os dois campos.', true); return; }
+  const dados = {data: v('tData') || null, cliente: v('tCli'), cia: v('tCia'), saida: v('tSaida'), destino: v('tDest'), valor, despesa, forma: formaT, obs: v('tObs'), recebido: document.getElementById('tRecebi').checked};
+  const antes = (NOVOS.taxi || []).find(x => x.id === editandoT);
+  dados.recebidoEm = dados.recebido ? ((antes && antes.recebidoEm) || hoje()) : '';
+  if (!Array.isArray(NOVOS.taxi)) NOVOS.taxi = [];
+  if (editandoT === null) NOVOS.taxi.push({id: 't' + novoId(), ...dados});
+  else NOVOS.taxi = NOVOS.taxi.map(x => x.id === editandoT ? {...x, ...dados} : x);
+  const ok = gravaLocal();
+  renderTaxiTudo();
+  if (ok) { fechaFormT(); mostra(msg, '', false); }
+  else mostra(msg, 'Não foi possível salvar neste navegador. Faça um backup.', true);
+});
+
+document.getElementById('excluiT').addEventListener('click', () => {
+  const btn = document.getElementById('excluiT');
+  const msg = document.getElementById('msgT');
+  if (!confirmaExclusaoT) {
+    confirmaExclusaoT = true;
+    btn.textContent = 'Toque de novo para excluir';
+    mostra(msg, 'Confirme para excluir esta corrida.', true);
+    return;
+  }
+  NOVOS.taxi = (NOVOS.taxi || []).filter(x => x.id !== editandoT);
+  gravaLocal();
+  fechaFormT();
+  renderTaxiTudo();
+});
+
 /* ---------- recálculo geral ---------- */
 function recalcular(){
   servicos = servicosAtuais().sort(byDataDesc);
@@ -1214,6 +1478,7 @@ function recalcular(){
   filtrarServicos();
   filtrarCaixa();
   renderComissoes();
+  renderTaxiTudo();
 }
 
 /* ---------- salvar arquivo: tenta várias formas ---------- */
@@ -1284,6 +1549,10 @@ function importarDados(dados){
   if (dados.recebidos) Object.keys(dados.recebidos).forEach(k => NOVOS.recebidos[k] = true);
   if (dados.ajustes) Object.assign(NOVOS.ajustes, dados.ajustes);
   if (Array.isArray(dados.pagamentos)) dados.pagamentos.forEach(p => { if (p && Array.isArray(p.ids) && !NOVOS.pagamentos.some(q => q.id === p.id)) { NOVOS.pagamentos.push(p); adicionados++; } });
+  if (Array.isArray(dados.taxi)) {
+    if (!Array.isArray(NOVOS.taxi)) NOVOS.taxi = [];
+    dados.taxi.forEach(t => { if (t && !NOVOS.taxi.some(q => q.id === t.id)) { NOVOS.taxi.push(t); adicionados++; } });
+  }
   migraLegado();
   gravaLocal();
   recalcular();
