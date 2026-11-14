@@ -131,6 +131,9 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
 .carro svg{display:block;width:100%;max-width:200px;margin:8px auto;background:var(--card);border:1px solid var(--line);border-radius:12px;touch-action:manipulation}
 .avisobk{margin:10px 0;padding:12px 14px;border-radius:12px;background:var(--amber);color:var(--amber-ink);font-weight:600}
 .avisobk .acoes{margin-top:8px}
+.card.venc{border-left:5px solid #c0392b}
+.card.perto{border-left:5px solid var(--amber)}
+#mProx .card{margin:6px 0;padding:10px 12px}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -158,10 +161,15 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
     <button role="tab" data-tab="comis" aria-selected="false">Comissões</button>
     <button role="tab" data-tab="caixa" aria-selected="false">Caixa</button>
     <button role="tab" data-tab="taxi" aria-selected="false">Táxi</button>
+    <button role="tab" data-tab="manut" aria-selected="false">Manutenção</button>
   </div>
   <div class="avisobk" id="avisoBk" hidden>
     <span id="avisoBkTxt"></span>
     <div class="acoes"><button class="btn mini sec" id="irBkDados" type="button">Backup dos dados</button><button class="btn mini sec" id="irBkVist" type="button">Backup das vistorias</button></div>
+  </div>
+  <div class="avisobk" id="avisoMt" hidden>
+    <span id="avisoMtTxt"></span>
+    <div class="acoes"><button class="btn mini sec" id="irManut" type="button">Ver manutenção</button></div>
   </div>
 
   <!-- SERVIÇOS -->
@@ -284,12 +292,96 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
     <p class="msg" id="msgRel" role="status"></p>
   </section>
 
+  <!-- MANUTENÇÃO -->
+  <section id="manut" hidden>
+    <p class="explica">Manutenção do táxi e do guincho. É só sua: não entra nas Comissões nem no Caixa.</p>
+    <div id="mProx"></div>
+    <label for="mFiltro">Veículo</label>
+    <select id="mFiltro"></select>
+    <div class="seg tres" id="segMPer">
+      <button type="button" data-per="mes" aria-pressed="true">Este mês</button>
+      <button type="button" data-per="ant" aria-pressed="false">Mês passado</button>
+      <button type="button" data-per="tudo" aria-pressed="false">Tudo</button>
+    </div>
+    <div class="rel-campos">
+      <div><label for="mDe">De</label><input id="mDe" type="date"></div>
+      <div><label for="mAte">Até</label><input id="mAte" type="date"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span>Registros</span><b id="mQtd">0</b></div>
+      <div class="stat"><span>Gasto no período</span><b class="out" id="mTot">R$ 0,00</b></div>
+    </div>
+    <details class="form" id="mPorVeic"><summary>Gasto por veículo no período</summary><div id="mPorVeicLista"></div></details>
+
+    <button class="btn" id="abreFormM" type="button">Nova manutenção</button>
+    <div class="form" id="formM" hidden>
+      <h2 class="titulo-form" id="tituloFormM">Nova manutenção</h2>
+      <label for="mVeic">Veículo</label>
+      <select id="mVeic"></select>
+      <div class="grid2">
+        <div><label for="mData">Data</label><input id="mData" type="date"></div>
+        <div><label for="mKm">KM do veículo</label><input id="mKm" type="number" inputmode="numeric" min="0"></div>
+      </div>
+      <label for="mTipo">Tipo de serviço</label>
+      <input id="mTipo" type="text" list="listaTiposM" autocomplete="off" placeholder="Troca de óleo, pneus, freios...">
+      <datalist id="listaTiposM"></datalist>
+      <div class="grid2">
+        <div><label for="mValor">Valor (R$)</label><input id="mValor" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00"></div>
+        <div><label for="mOficina">Oficina</label><input id="mOficina" type="text"></div>
+      </div>
+      <label for="mObs">Observação</label>
+      <input id="mObs" type="text">
+      <label>Próxima manutenção deste serviço (opcional)</label>
+      <div class="grid2">
+        <div><label for="mProxKm">Na altura de (KM)</label><input id="mProxKm" type="number" inputmode="numeric" min="0"></div>
+        <div><label for="mProxData">Ou na data</label><input id="mProxData" type="date"></div>
+      </div>
+      <button class="btn" id="salvaM" type="button">Salvar manutenção</button>
+      <button class="btn sec" id="cancelaM" type="button">Fechar</button>
+      <button class="btn perigo" id="excluiM" type="button" hidden>Excluir manutenção</button>
+      <p class="msg" id="msgM" role="status"></p>
+    </div>
+
+    <details class="form" id="mVeicBox">
+      <summary>Veículos cadastrados</summary>
+      <div id="mVeicLista"></div>
+      <button class="btn sec" id="abreFormVei" type="button">Cadastrar veículo</button>
+      <div id="formVei" hidden>
+        <h2 class="titulo-form" id="tituloFormVei">Novo veículo</h2>
+        <label for="veApelido">Apelido</label>
+        <input id="veApelido" type="text" placeholder="Ex.: Kia Bongo">
+        <label for="veModelo">Modelo</label>
+        <input id="veModelo" type="text">
+        <div class="grid2">
+          <div><label for="vePlaca">Placa</label><input id="vePlaca" type="text" autocapitalize="characters"></div>
+          <div><label for="veAno">Ano</label><input id="veAno" type="text" inputmode="numeric"></div>
+        </div>
+        <div class="grid2">
+          <div><label for="veKm">KM atual</label><input id="veKm" type="number" inputmode="numeric" min="0"></div>
+          <div><label for="veUso">Uso</label><select id="veUso"><option>Guincho</option><option>Táxi</option><option>Outro</option></select></div>
+        </div>
+        <label class="chk"><input type="checkbox" id="veAtivo" checked> Veículo ativo (desmarque se foi vendido)</label>
+        <button class="btn" id="salvaVe" type="button">Salvar veículo</button>
+        <button class="btn sec" id="cancelaVe" type="button">Fechar</button>
+        <button class="btn perigo" id="excluiVe" type="button" hidden>Excluir veículo</button>
+        <p class="msg" id="msgVe" role="status"></p>
+      </div>
+    </details>
+
+    <label for="buscaM">Buscar</label>
+    <input id="buscaM" type="search" placeholder="Tipo, oficina, observação...">
+    <p class="count" id="contM"></p>
+    <div id="listM"></div>
+    <button class="more" id="maisM" hidden>Mostrar mais</button>
+  </section>
+
   <!-- VISTORIA -->
   <section id="vist" hidden>
     <p class="explica">Vistoria do veículo com fotos e assinatura do cliente. Gera um PDF para enviar.</p>
     <p class="explica" id="offStatus"></p>
     <p class="explica" id="avisoEspaco" hidden></p>
     <label class="chk"><input type="checkbox" id="carimboOn" checked> Carimbar fotos com data, hora e local</label>
+    <datalist id="listaCidades"></datalist>
     <button class="btn" id="abreFormV" type="button">Nova vistoria</button>
     <button class="btn sec" id="abreFormP" type="button">Ficha em papel (só fotos)</button>
     <div class="form" id="formV" hidden>
@@ -371,6 +463,7 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
       </div>
       <button class="btn" id="salvaV" type="button">Salvar vistoria</button>
       <button class="btn ok" id="pdfV" type="button">Gerar PDF para o cliente</button>
+      <button class="btn sec" id="criaServV" type="button">Criar serviço com estes dados</button>
       <button class="btn sec" id="cancelaV" type="button">Fechar</button>
       <button class="btn perigo" id="excluiV" type="button" hidden>Excluir vistoria</button>
       <p class="msg" id="msgV" role="status"></p>
@@ -605,9 +698,9 @@ const rotuloQuinzena = chave => {
 
 /* ---------- dados locais (somente neste aparelho) ---------- */
 /* Guardados em duas gavetas do navegador (localStorage e IndexedDB). Se uma falhar, a outra segura. */
-let NOVOS = {servicos: [], caixa: [], recebidos: {}, ajustes: {}, pagamentos: [], taxi: [], salvoEm: 0};
+let NOVOS = {servicos: [], caixa: [], recebidos: {}, ajustes: {}, pagamentos: [], taxi: [], veiculos: [], manut: [], veicIni: false, salvoEm: 0};
 const estado = {ls: null, idb: null};
-const normaliza = v => ({servicos: v.servicos, caixa: v.caixa, recebidos: v.recebidos || {}, ajustes: v.ajustes || {}, pagamentos: v.pagamentos || [], taxi: Array.isArray(v.taxi) ? v.taxi : [], salvoEm: v.salvoEm || 0});
+const normaliza = v => ({servicos: v.servicos, caixa: v.caixa, recebidos: v.recebidos || {}, ajustes: v.ajustes || {}, pagamentos: v.pagamentos || [], taxi: Array.isArray(v.taxi) ? v.taxi : [], veiculos: Array.isArray(v.veiculos) ? v.veiculos : [], manut: Array.isArray(v.manut) ? v.manut : [], veicIni: !!v.veicIni, salvoEm: v.salvoEm || 0});
 const valido = v => v && Array.isArray(v.servicos) && Array.isArray(v.caixa);
 
 const IDB = {
@@ -708,7 +801,7 @@ function fechaMenuMais(){ menuMais.hidden = true; btnMais.setAttribute('aria-exp
 tabs.forEach(btn => btn.addEventListener('click', () => {
   tabs.forEach(b => b.setAttribute('aria-selected', String(b === btn)));
   btnMais.setAttribute('aria-selected', String(menuMais.contains(btn)));
-  ['serv','comis','caixa','taxi','vist'].forEach(id => document.getElementById(id).hidden = (id !== btn.dataset.tab));
+  ['serv','comis','caixa','taxi','vist','manut'].forEach(id => document.getElementById(id).hidden = (id !== btn.dataset.tab));
   fechaMenuMais();
   window.scrollTo({top: 0});
 }));
@@ -848,6 +941,7 @@ function atualizaCias(){
   [...BASE.servicos, ...NOVOS.servicos].forEach(x => { const c = (NOVOS.ajustes[x.id]?.cia ?? x.cia); if (c) set.add(c); });
   (NOVOS.taxi || []).forEach(x => { if (x.cia) set.add(x.cia); });
   document.getElementById('listaCias').innerHTML = [...set].sort().map(c => `<option value="${esc(c)}">`).join('');
+  atualizaCidades();
 }
 
 function abreForm(servico){
@@ -1665,9 +1759,9 @@ const SEGS_V = {vMotivo: ['motivo', ['Acidente','Roubo/Furto','Pane','Combustív
 const LINHAS_V = [[['numero','Nº','text'],['data','Data','date']], [['hora','Hora','time'],['atendente','Atendente','text']],
   [['cia','Seguradora / Cia','text']], [['assist','Assistência','text']], [['prop','Proprietário','text'],['tel','Telefone','tel']],
   [['veic','Veículo','text']], [['ano','Ano','text'],['cor','Cor','text']], [['placa','Placa','text'],['km','KM do veículo','text']],
-  [['atend','Local de atendimento','text']], [['dest','Destino','text']], [['kmSaida','Km saída','text'],['kmChegada','Km chegada','text']]];
+  [['atend','Local de atendimento (endereço)','text']], [['cidadeSaida','Cidade de saída (opcional)','text']], [['dest','Destino (endereço)','text']], [['cidadeDest','Cidade de destino (opcional)','text']], [['kmSaida','Km saída','text'],['kmChegada','Km chegada','text']]];
 const CHAVES_V = LINHAS_V.flat().map(c => c[0]).concat(['obs','nomeCli','rgCli','nomeMot','rgMot']);
-const campoV = ([k, nome, tipo]) => `<div><label for="v_${k}">${nome}</label><input id="v_${k}" type="${tipo}"${k === 'cia' ? ' list="listaCias" autocomplete="off"' : ''}${k === 'placa' ? ' autocapitalize="characters"' : ''}></div>`;
+const campoV = ([k, nome, tipo]) => `<div><label for="v_${k}">${nome}</label><input id="v_${k}" type="${tipo}"${k === 'cia' ? ' list="listaCias" autocomplete="off"' : (k === 'cidadeSaida' || k === 'cidadeDest') ? ' list="listaCidades" autocomplete="off"' : ''}${k === 'placa' ? ' autocapitalize="characters"' : ''}></div>`;
 document.getElementById('vCampos').innerHTML = LINHAS_V.map(l => l.length > 1 ? `<div class="grid2">${l.map(campoV).join('')}</div>` : campoV(l[0])).join('');
 
 /* banco próprio (IndexedDB): fotos ocupam espaço demais para o armazenamento normal */
@@ -1878,7 +1972,7 @@ function renderListaV(){
   const q = buscaV.value.trim().toLowerCase();
   const l = listaV.slice().sort((a, b) => (b.criado || 0) - (a.criado || 0));
   showV(q ? l.filter(v => [v.numero, v.placa, v.prop, v.veic, v.cia, v.data].join(' ').toLowerCase().includes(q)) : l);
-  atualizaEspaco(); avisaBackup();
+  atualizaEspaco(); avisaBackup(); atualizaCidades();
 }
 buscaV.addEventListener('input', renderListaV);
 async function carregaV(){
@@ -1957,8 +2051,8 @@ function montaPDF(v){
   linha([A, w2, 'Proprietário', v.prop], [B, w2, 'Telefone', v.tel]);
   linha([A, w2, 'Veículo', v.veic], [B, w2, 'Placa', v.placa]);
   linha([A, 60, 'Ano', v.ano], [A + 63, 60, 'Cor', v.cor], [A + 126, 60, 'KM do veículo', v.km]);
-  linha([A, 190, 'Local de atendimento', v.atend]);
-  linha([A, 190, 'Destino', v.dest]);
+  linha([A, 190, 'Local de atendimento', [v.atend, v.cidadeSaida].filter(Boolean).join(' - ')]);
+  linha([A, 190, 'Destino', [v.dest, v.cidadeDest].filter(Boolean).join(' - ')]);
 
   nova(70);
   d.setFont('helvetica', 'bold'); d.setFontSize(9); d.setTextColor(0); d.text('ACESSÓRIOS / EQUIPAMENTOS EXISTENTES', M, y);
@@ -2000,7 +2094,7 @@ function montaPDF(v){
     d.setTextColor(190, 30, 30); d.setFontSize(12); d.text('Vistoria Nº ' + (v.numero || '-'), W - M, y + 5, {align: 'right'});
     d.setDrawColor(0); d.setLineWidth(0.5); d.line(M, y + 8, W - M, y + 8); d.setLineWidth(0.2); y += 12;
     linha([A, w2, 'Data / hora da entrega', br(en.data) + (en.hora ? ' às ' + en.hora : '')], [B, w2, 'Veículo / placa', (v.veic || '-') + ' - ' + (v.placa || '-')]);
-    linha([A, 190, 'Destino', v.dest]);
+    linha([A, 190, 'Destino', [v.dest, v.cidadeDest].filter(Boolean).join(' - ')]);
     nova(70);
     d.setFont('helvetica', 'bold'); d.setFontSize(9); d.setTextColor(0); d.text('ACESSÓRIOS / EQUIPAMENTOS NA ENTREGA', M, y);
     d.setFont('helvetica', 'normal'); d.setFontSize(7); d.setTextColor(110);
@@ -2063,7 +2157,11 @@ async function exportaPDF(v, msg){
 
 document.getElementById('abreFormV').addEventListener('click', () => { if (!formV.hidden && editandoV === null) { fechaFormV(); return; } abreFormV(null); });
 document.getElementById('cancelaV').addEventListener('click', fechaFormV);
-document.getElementById('salvaV').addEventListener('click', async () => { const v = await salvaV(); if (v) mostra(msgV, 'Vistoria salva.', false); });
+document.getElementById('salvaV').addEventListener('click', async () => {
+  const v = await salvaV(); if (!v) return;
+  const falta = [!v.atend && 'o endereço de atendimento', !v.dest && 'o endereço de destino'].filter(Boolean);
+  mostra(msgV, 'Vistoria salva.' + (falta.length ? ' Atenção: falta ' + falta.join(' e ') + ' (a seguradora exige).' : ''), falta.length > 0);
+});
 document.getElementById('pdfV').addEventListener('click', async () => { const v = await salvaV(); if (v) exportaPDF(v, msgV); });
 document.getElementById('excluiV').addEventListener('click', async () => {
   const btn = document.getElementById('excluiV');
@@ -2346,7 +2444,212 @@ function avisaBackup(){
 document.getElementById('irBkDados').addEventListener('click', () => { document.querySelector('[data-tab="caixa"]').click(); document.getElementById('backup').scrollIntoView({behavior: 'smooth', block: 'center'}); });
 document.getElementById('irBkVist').addEventListener('click', () => { document.querySelector('[data-tab="vist"]').click(); const dt2 = document.getElementById('espacoV'); dt2.open = true; dt2.scrollIntoView({behavior: 'smooth', block: 'center'}); });
 
+/* ---------- cidades e criação de serviço a partir da vistoria ---------- */
+function atualizaCidades(){
+  try {
+    const mapa = new Map();
+    const add = c => { c = (c || '').trim(); if (c && !mapa.has(c.toLowerCase())) mapa.set(c.toLowerCase(), c); };
+    [...BASE.servicos, ...NOVOS.servicos].forEach(x => { add(x.saida); add(x.destino); });
+    listaV.forEach(v => { add(v.cidadeSaida); add(v.cidadeDest); });
+    document.getElementById('listaCidades').innerHTML = [...mapa.values()].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(c => `<option value="${esc(c)}">`).join('');
+  } catch (_) {}
+}
+document.getElementById('criaServV').addEventListener('click', () => {
+  const g = k => document.getElementById('v_' + k).value.trim(), cia = g('cia');
+  document.querySelector('[data-tab="serv"]').click();
+  abreForm({id: null, data: g('data') || hoje(), veiculo: g('veic'), saida: g('cidadeSaida'), destino: g('cidadeDest'),
+            tipo: cia ? 'Seguro' : 'Particular', cia, obs: [g('placa') && 'Placa ' + g('placa'), g('numero') && 'Vistoria nº ' + g('numero')].filter(Boolean).join(' · ')});
+  document.getElementById('tituloFormS').textContent = 'Novo serviço';
+  document.getElementById('salvaS').textContent = 'Salvar serviço';
+  document.getElementById('excluiS').hidden = true;
+});
+
 carregaV();
+
+/* ---------- manutenção dos veículos (só do dono: fora de Comissões e Caixa) ---------- */
+const TIPOS_M = ['Troca de óleo', 'Pneus', 'Freios', 'Revisão', 'Bateria', 'Suspensão', 'Elétrica', 'Licenciamento / IPVA', 'Seguro', 'Outro'];
+document.getElementById('listaTiposM').innerHTML = TIPOS_M.map(t => `<option value="${esc(t)}">`).join('');
+let editandoM = null, confirmaExclusaoM = false, editandoVe = null, confirmaExclusaoVe = false;
+const veiculosM = () => Array.isArray(NOVOS.veiculos) ? NOVOS.veiculos : (NOVOS.veiculos = []);
+const manutM = () => Array.isArray(NOVOS.manut) ? NOVOS.manut : (NOVOS.manut = []);
+const nomeVe = id => { const v = veiculosM().find(x => x.id === id); return v ? v.apelido : 'Veículo removido'; };
+const kmFmt = n => Number(n).toLocaleString('pt-BR');
+const diasAte = d => Math.round((new Date(d + 'T12:00:00') - new Date(hoje() + 'T12:00:00')) / 864e5);
+const mDe = document.getElementById('mDe'), mAte = document.getElementById('mAte'), mFiltro = document.getElementById('mFiltro');
+(function(){ const p = periodoMes(0); mDe.value = p.de; mAte.value = p.ate; })();
+
+function semeiaVeiculos(){
+  if (NOVOS.veicIni) return;
+  if (!veiculosM().length) veiculosM().push(
+    {id: 'vei_bongo', apelido: 'Kia Bongo', modelo: 'Kia Bongo', placa: '', ano: '', km: '', uso: 'Guincho', ativo: true},
+    {id: 'vei_cronos', apelido: 'Fiat Cronos', modelo: 'Fiat Cronos', placa: '', ano: '', km: '', uso: 'Táxi', ativo: true});
+  NOVOS.veicIni = true; gravaLocal(); renderManutTudo();
+}
+
+/* próximas manutenções: vale o registro mais recente de cada serviço, em cada veículo */
+function proximasM(){
+  const ult = {};
+  manutM().slice().sort(byDataAsc).forEach(m => { ult[m.veiculoId + '|' + (m.tipo || '').trim().toLowerCase()] = m; });
+  const out = [];
+  Object.values(ult).forEach(m => {
+    const v = veiculosM().find(x => x.id === m.veiculoId);
+    if (!v || v.ativo === false || (!m.proxData && !m.proxKm)) return;
+    let nivel = 2, dias = null, falta = null; const partes = [];
+    if (m.proxData) {
+      dias = diasAte(m.proxData);
+      partes.push(dt(m.proxData) + (dias < 0 ? ' (vencida há ' + (-dias) + ' dia(s))' : dias === 0 ? ' (hoje)' : ' (em ' + dias + ' dia(s))'));
+      nivel = Math.min(nivel, dias < 0 ? 0 : dias <= 15 ? 1 : 2);
+    }
+    if (m.proxKm) {
+      const atual = Number(v.km) || 0;
+      if (atual > 0) {
+        falta = Number(m.proxKm) - atual;
+        partes.push(kmFmt(m.proxKm) + ' km (' + (falta < 0 ? 'passou ' + kmFmt(-falta) + ' km' : 'faltam ' + kmFmt(falta) + ' km') + ')');
+        nivel = Math.min(nivel, falta < 0 ? 0 : falta <= 500 ? 1 : 2);
+      } else partes.push(kmFmt(m.proxKm) + ' km (informe o KM atual do veículo)');
+    }
+    out.push({v, m, nivel, dias, texto: partes.join(' ou ')});
+  });
+  return out.sort((a, b) => a.nivel - b.nivel || (a.dias ?? 9999) - (b.dias ?? 9999));
+}
+function renderProxM(){
+  const l = proximasM();
+  document.getElementById('mProx').innerHTML = l.length ? '<h2 class="titulo-form">Próximas manutenções</h2>' + l.map(x =>
+    `<div class="card ${x.nivel === 0 ? 'venc' : x.nivel === 1 ? 'perto' : ''}"><div class="title">${esc(x.v.apelido)} · ${esc(x.m.tipo) || 'Manutenção'}</div><div class="sub">${esc(x.texto)}</div></div>`).join('') : '';
+  const urg = l.filter(x => x.nivel <= 1);
+  document.getElementById('avisoMt').hidden = !urg.length;
+  document.getElementById('avisoMtTxt').textContent = urg.length ? 'Manutenção: ' + urg.slice(0, 3).map(x => x.v.apelido + ' - ' + (x.m.tipo || 'manutenção') + ' (' + x.texto + ')').join('; ') + (urg.length > 3 ? ' e mais ' + (urg.length - 3) + '.' : '.') : '';
+}
+document.getElementById('irManut').addEventListener('click', () => document.querySelector('[data-tab="manut"]').click());
+
+const renderM = m => `
+  <div class="card">
+    <div class="top"><span>${dt(m.data)}</span><span class="etq aberto">${esc(nomeVe(m.veiculoId))}</span></div>
+    <div class="title">${esc(m.tipo) || 'Manutenção'}</div>
+    <div class="sub">${m.km ? kmFmt(m.km) + ' km' : ''}${m.km && m.oficina ? ' · ' : ''}${esc(m.oficina)}</div>
+    ${m.obs ? `<div class="sub">${esc(m.obs)}</div>` : ''}
+    ${(m.proxKm || m.proxData) ? `<div class="sub">Próxima: ${m.proxKm ? kmFmt(m.proxKm) + ' km' : ''}${m.proxKm && m.proxData ? ' ou ' : ''}${m.proxData ? dt(m.proxData) : ''}</div>` : ''}
+    <div class="linha-valores"><div><span>Valor </span><b>${fmt(m.valor || 0)}</b></div></div>
+    <div class="acoes"><button class="btn mini sec" type="button" data-editar-m="${esc(m.id)}">Editar</button></div>
+  </div>`;
+const showM = makeList(document.getElementById('listM'), document.getElementById('maisM'), document.getElementById('contM'), renderM);
+const buscaM = document.getElementById('buscaM');
+
+function renderManutTudo(){
+  const atual = mFiltro.value;
+  mFiltro.innerHTML = '<option value="">Todos os veículos</option>' + veiculosM().map(v => `<option value="${esc(v.id)}">${esc(v.apelido)}${v.ativo === false ? ' (inativo)' : ''}</option>`).join('');
+  mFiltro.value = veiculosM().some(v => v.id === atual) ? atual : '';
+  renderProxM();
+  const de = mDe.value, ate = mAte.value, fv = mFiltro.value;
+  const doPer = manutM().filter(m => (!de || (m.data && m.data >= de)) && (!ate || (m.data && m.data <= ate)) && (!fv || m.veiculoId === fv)).sort(byDataDesc);
+  document.getElementById('mQtd').textContent = doPer.length;
+  document.getElementById('mTot').textContent = fmt(doPer.reduce((t, m) => t + (m.valor || 0), 0));
+  const por = {};
+  doPer.forEach(m => { const k = nomeVe(m.veiculoId); const o = por[k] || (por[k] = {n: 0, t: 0}); o.n++; o.t += m.valor || 0; });
+  document.getElementById('mPorVeicLista').innerHTML = Object.keys(por).length ? Object.keys(por).sort((a, b) => por[b].t - por[a].t).map(k =>
+    `<div class="card"><div class="title">${esc(k)}</div><div class="sub">${plural(por[k].n, 'registro', 'registros')}</div><div class="linha-valores"><div><span>Gasto </span><b>${fmt(por[k].t)}</b></div></div></div>`).join('') : '<p class="explica">Nenhum gasto neste período.</p>';
+  const q = buscaM.value.trim().toLowerCase();
+  showM(q ? doPer.filter(m => [m.data, m.tipo, m.oficina, m.obs, nomeVe(m.veiculoId)].join(' ').toLowerCase().includes(q)) : doPer);
+  renderVeiculosM();
+}
+buscaM.addEventListener('input', renderManutTudo);
+mFiltro.addEventListener('change', renderManutTudo);
+const marcaAtalhoM = per => document.querySelectorAll('#segMPer button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.per === per)));
+document.getElementById('segMPer').addEventListener('click', e => {
+  const b = e.target.closest('button[data-per]'); if (!b) return;
+  const per = b.dataset.per;
+  if (per === 'tudo') { mDe.value = ''; mAte.value = ''; } else { const p = periodoMes(per === 'ant' ? -1 : 0); mDe.value = p.de; mAte.value = p.ate; }
+  marcaAtalhoM(per); renderManutTudo();
+});
+[mDe, mAte].forEach(el => el.addEventListener('input', () => { marcaAtalhoM(''); renderManutTudo(); }));
+
+/* registro de manutenção */
+const formM = document.getElementById('formM'), msgM = document.getElementById('msgM');
+function abreFormM(m){
+  editandoM = m ? m.id : null; confirmaExclusaoM = false;
+  const ativos = veiculosM().filter(v => v.ativo !== false || (m && v.id === m.veiculoId));
+  document.getElementById('mVeic').innerHTML = ativos.map(v => `<option value="${esc(v.id)}">${esc(v.apelido)}</option>`).join('');
+  const sel = m ? m.veiculoId : (mFiltro.value || (ativos[0] && ativos[0].id) || '');
+  if (sel) document.getElementById('mVeic').value = sel;
+  const v = {mData: (m && m.data) || hoje(), mKm: (m && m.km) || '', mTipo: (m && m.tipo) || '', mValor: (m && m.valor) || '', mOficina: (m && m.oficina) || '', mObs: (m && m.obs) || '', mProxKm: (m && m.proxKm) || '', mProxData: (m && m.proxData) || ''};
+  Object.entries(v).forEach(([id, val]) => { document.getElementById(id).value = val; });
+  document.getElementById('tituloFormM').textContent = m ? 'Editar manutenção' : 'Nova manutenção';
+  document.getElementById('excluiM').hidden = !m;
+  document.getElementById('excluiM').textContent = 'Excluir manutenção';
+  mostra(msgM, '', false);
+  formM.hidden = false;
+  formM.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+function fechaFormM(){ formM.hidden = true; editandoM = null; confirmaExclusaoM = false; }
+document.getElementById('abreFormM').addEventListener('click', () => { if (!formM.hidden && editandoM === null) { fechaFormM(); return; } abreFormM(null); });
+document.getElementById('cancelaM').addEventListener('click', fechaFormM);
+document.getElementById('listM').addEventListener('click', e => {
+  const b = e.target.closest('button[data-editar-m]'); if (!b) return;
+  const m = manutM().find(x => x.id === b.dataset.editarM); if (m) abreFormM(m);
+});
+document.getElementById('salvaM').addEventListener('click', () => {
+  const v = id => document.getElementById(id).value.trim();
+  const veiculoId = v('mVeic');
+  if (!veiculoId) { mostra(msgM, 'Cadastre um veículo primeiro (em Veículos cadastrados, mais abaixo).', true); return; }
+  const dados = {veiculoId, data: v('mData') || hoje(), km: num(v('mKm')) || '', tipo: v('mTipo'), valor: num(v('mValor')), oficina: v('mOficina'), obs: v('mObs'), proxKm: num(v('mProxKm')) || '', proxData: v('mProxData')};
+  if (editandoM === null) manutM().push({id: 'm' + novoId(), ...dados});
+  else NOVOS.manut = manutM().map(x => x.id === editandoM ? {...x, ...dados} : x);
+  const ve = veiculosM().find(x => x.id === veiculoId);
+  if (ve && dados.km && dados.km > (Number(ve.km) || 0)) ve.km = dados.km;
+  const ok = gravaLocal();
+  renderManutTudo();
+  if (ok) fechaFormM(); else mostra(msgM, 'Não foi possível salvar neste navegador. Faça um backup.', true);
+});
+document.getElementById('excluiM').addEventListener('click', () => {
+  const b = document.getElementById('excluiM');
+  if (!confirmaExclusaoM) { confirmaExclusaoM = true; b.textContent = 'Toque de novo para excluir'; mostra(msgM, 'Confirme para excluir esta manutenção.', true); return; }
+  NOVOS.manut = manutM().filter(x => x.id !== editandoM);
+  gravaLocal(); fechaFormM(); renderManutTudo();
+});
+
+/* cadastro de veículos */
+const formVei = document.getElementById('formVei'), msgVe = document.getElementById('msgVe');
+function renderVeiculosM(){
+  document.getElementById('mVeicLista').innerHTML = veiculosM().map(v => `
+    <div class="card"><div class="title">${esc(v.apelido)}${v.ativo === false ? ' (inativo)' : ''}</div>
+      <div class="sub">${[v.modelo, v.placa, v.ano].filter(Boolean).map(esc).join(' · ')}</div>
+      <div class="sub">${esc(v.uso || '')}${v.km ? ' · ' + kmFmt(v.km) + ' km' : ''}</div>
+      <div class="acoes"><button class="btn mini sec" type="button" data-editar-ve="${esc(v.id)}">Editar</button></div></div>`).join('') || '<p class="explica">Nenhum veículo cadastrado.</p>';
+}
+function abreFormVei(v){
+  editandoVe = v ? v.id : null; confirmaExclusaoVe = false;
+  const d = {veApelido: (v && v.apelido) || '', veModelo: (v && v.modelo) || '', vePlaca: (v && v.placa) || '', veAno: (v && v.ano) || '', veKm: (v && v.km) || '', veUso: (v && v.uso) || 'Guincho'};
+  Object.entries(d).forEach(([id, val]) => { document.getElementById(id).value = val; });
+  document.getElementById('veAtivo').checked = !v || v.ativo !== false;
+  document.getElementById('tituloFormVei').textContent = v ? 'Editar veículo' : 'Novo veículo';
+  document.getElementById('excluiVe').hidden = !v;
+  document.getElementById('excluiVe').textContent = 'Excluir veículo';
+  mostra(msgVe, '', false);
+  formVei.hidden = false;
+}
+function fechaFormVei(){ formVei.hidden = true; editandoVe = null; confirmaExclusaoVe = false; }
+document.getElementById('abreFormVei').addEventListener('click', () => abreFormVei(null));
+document.getElementById('cancelaVe').addEventListener('click', fechaFormVei);
+document.getElementById('mVeicLista').addEventListener('click', e => {
+  const b = e.target.closest('button[data-editar-ve]'); if (!b) return;
+  const v = veiculosM().find(x => x.id === b.dataset.editarVe); if (v) abreFormVei(v);
+});
+document.getElementById('salvaVe').addEventListener('click', () => {
+  const g = id => document.getElementById(id).value.trim();
+  const apelido = g('veApelido') || g('veModelo');
+  if (!apelido) { mostra(msgVe, 'Informe o apelido ou o modelo do veículo.', true); return; }
+  const dados = {apelido, modelo: g('veModelo'), placa: g('vePlaca').toUpperCase(), ano: g('veAno'), km: num(g('veKm')) || '', uso: g('veUso'), ativo: document.getElementById('veAtivo').checked};
+  if (editandoVe === null) veiculosM().push({id: 'vei' + novoId(), ...dados});
+  else NOVOS.veiculos = veiculosM().map(x => x.id === editandoVe ? {...x, ...dados} : x);
+  gravaLocal(); fechaFormVei(); renderManutTudo();
+});
+document.getElementById('excluiVe').addEventListener('click', () => {
+  const b = document.getElementById('excluiVe');
+  if (manutM().some(m => m.veiculoId === editandoVe)) { mostra(msgVe, 'Este veículo tem manutenções registradas. Desmarque "Veículo ativo" em vez de excluir.', true); return; }
+  if (!confirmaExclusaoVe) { confirmaExclusaoVe = true; b.textContent = 'Toque de novo para excluir'; return; }
+  NOVOS.veiculos = veiculosM().filter(x => x.id !== editandoVe);
+  gravaLocal(); fechaFormVei(); renderManutTudo();
+});
 
 /* ---------- recálculo geral ---------- */
 function recalcular(){
@@ -2364,6 +2667,7 @@ function recalcular(){
   filtrarCaixa();
   renderComissoes();
   renderTaxiTudo();
+  renderManutTudo();
 }
 
 /* ---------- salvar arquivo: tenta várias formas ---------- */
@@ -2439,6 +2743,12 @@ function importarDados(dados){
     if (!Array.isArray(NOVOS.taxi)) NOVOS.taxi = [];
     dados.taxi.forEach(t => { if (t && !NOVOS.taxi.some(q => q.id === t.id)) { NOVOS.taxi.push(t); adicionados++; } });
   }
+  ['veiculos', 'manut'].forEach(k => {
+    if (!Array.isArray(dados[k])) return;
+    if (!Array.isArray(NOVOS[k])) NOVOS[k] = [];
+    dados[k].forEach(t => { if (t && !NOVOS[k].some(q => q.id === t.id)) { NOVOS[k].push(t); adicionados++; } });
+  });
+  if (dados.veicIni) NOVOS.veicIni = true;
   migraLegado();
   gravaLocal();
   recalcular();
@@ -2483,7 +2793,7 @@ document.getElementById('restauraTexto').addEventListener('click', () => {
 })();
 carregaLocal();
 recalcular();
-iniciaArmazenamento();
+iniciaArmazenamento().then(semeiaVeiculos, semeiaVeiculos);
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 
 /* ---------- modo sem internet ---------- */
