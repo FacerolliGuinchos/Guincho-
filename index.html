@@ -127,6 +127,10 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
 .vcorpo{display:flex;gap:12px;align-items:center;margin:6px 0}
 .vcorpo>div{flex:1;min-width:0}
 .thumbv{width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none}
+.carro{color:var(--ink)}
+.carro svg{display:block;width:100%;max-width:200px;margin:8px auto;background:var(--card);border:1px solid var(--line);border-radius:12px;touch-action:manipulation}
+.avisobk{margin:10px 0;padding:12px 14px;border-radius:12px;background:var(--amber);color:var(--amber-ink);font-weight:600}
+.avisobk .acoes{margin-top:8px}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -154,6 +158,10 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
     <button role="tab" data-tab="comis" aria-selected="false">Comissões</button>
     <button role="tab" data-tab="caixa" aria-selected="false">Caixa</button>
     <button role="tab" data-tab="taxi" aria-selected="false">Táxi</button>
+  </div>
+  <div class="avisobk" id="avisoBk" hidden>
+    <span id="avisoBkTxt"></span>
+    <div class="acoes"><button class="btn mini sec" id="irBkDados" type="button">Backup dos dados</button><button class="btn mini sec" id="irBkVist" type="button">Backup das vistorias</button></div>
   </div>
 
   <!-- SERVIÇOS -->
@@ -281,6 +289,7 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
     <p class="explica">Vistoria do veículo com fotos e assinatura do cliente. Gera um PDF para enviar.</p>
     <p class="explica" id="offStatus"></p>
     <p class="explica" id="avisoEspaco" hidden></p>
+    <label class="chk"><input type="checkbox" id="carimboOn" checked> Carimbar fotos com data, hora e local</label>
     <button class="btn" id="abreFormV" type="button">Nova vistoria</button>
     <button class="btn sec" id="abreFormP" type="button">Ficha em papel (só fotos)</button>
     <div class="form" id="formV" hidden>
@@ -293,6 +302,10 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
       <div class="seg quebra" id="vComb"></div>
       <label>Pneus</label>
       <div class="seg quebra" id="vPneus"></div>
+      <label>Avarias (toque no desenho para marcar)</label>
+      <div class="seg" id="segCarroV"><button type="button" data-carro="V" data-t="A" aria-pressed="true">A = avaria</button><button type="button" data-carro="V" data-t="D" aria-pressed="false">D = dano</button></div>
+      <div class="carro" id="carroV"></div>
+      <button class="btn mini sec" type="button" data-carro-desfaz="V">Desfazer última marca</button>
       <label>Acessórios / equipamentos</label>
       <p class="explica">Toque para alternar: S = existe, N = não existe, I = incompleto ou avariado.</p>
       <div id="vItens"></div>
@@ -326,6 +339,10 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
             <div><label for="v_entData">Data da entrega</label><input id="v_entData" type="date"></div>
             <div><label for="v_entHora">Hora</label><input id="v_entHora" type="time"></div>
           </div>
+          <label>Avarias na entrega (começam iguais à retirada)</label>
+          <div class="seg" id="segCarroE"><button type="button" data-carro="E" data-t="A" aria-pressed="true">A = avaria</button><button type="button" data-carro="E" data-t="D" aria-pressed="false">D = dano</button></div>
+          <div class="carro" id="carroE"></div>
+          <button class="btn mini sec" type="button" data-carro-desfaz="E">Desfazer última marca</button>
           <label>Acessórios na entrega</label>
           <p class="explica">Começam iguais à retirada. Toque só no que estiver diferente.</p>
           <div id="eItens"></div>
@@ -1704,10 +1721,10 @@ function mostraEnt(ativo, ent){
   document.getElementById('descartaEnt').textContent = 'Remover entrega';
   document.getElementById('entCampos').hidden = !ativo;
   document.getElementById('abreEnt').hidden = ativo;
-  if (ativo) { renderItensE(); renderFotosE(); padRec.ajusta(ent && ent.assRec); padMotE.ajusta(ent && ent.assMot); }
+  if (ativo) { renderItensE(); renderFotosE(); renderCarro('E'); padRec.ajusta(ent && ent.assRec); padMotE.ajusta(ent && ent.assMot); }
 }
 document.getElementById('abreEnt').addEventListener('click', () => {
-  eEst = {ativo: true, itens: {...vEst.itens}, fotos: []};
+  eEst = {ativo: true, itens: {...vEst.itens}, fotos: [], marcas: (vEst.marcas || []).map(m => ({...m}))};
   Object.values(EF).forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('v_entData').value = hoje();
   document.getElementById('v_entHora').value = new Date().toTimeString().slice(0, 5);
@@ -1724,9 +1741,10 @@ formV.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.
 document.getElementById('eAddFoto').addEventListener('click', () => document.getElementById('eFotoIn').click());
 document.getElementById('eFotoIn').addEventListener('change', async ev => {
   const arqs = [...ev.target.files]; ev.target.value = '';
+  const lote = await loteCarimbo(arqs, msgV);
   for (const f of arqs) {
     if (eEst.fotos.length >= 20) { mostra(msgV, 'Limite de 20 fotos por etapa.', true); break; }
-    try { eEst.fotos.push(await reduzFoto(f)); } catch (_) { mostra(msgV, 'Uma das fotos não pôde ser lida.', true); }
+    try { eEst.fotos.push(await reduzFoto(f, 1100, 0.68, carimboDe(f, lote))); } catch (_) { mostra(msgV, 'Uma das fotos não pôde ser lida.', true); }
   }
   renderFotosE();
 });
@@ -1758,15 +1776,21 @@ formV.addEventListener('click', e => {
 });
 formV.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.leg !== undefined) vEst.fotos[Number(e.target.dataset.leg)].leg = e.target.value; });
 
-function reduzFoto(file, lado = 1100, qual = 0.68){
+function reduzFoto(file, lado = 1100, qual = 0.68, carimbo = null){
   return new Promise((ok, err) => {
     const url = URL.createObjectURL(file), im = new Image();
     im.onload = () => {
       const r = Math.min(1, lado / Math.max(im.width, im.height)), w = Math.round(im.width * r), h = Math.round(im.height * r);
-      const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h);
+      const c = document.createElement('canvas'); c.width = w; c.height = h; const cx = c.getContext('2d'); cx.drawImage(im, 0, 0, w, h);
+      if (carimbo && carimbo.length) {
+        const fs = Math.max(12, Math.round(Math.min(w, h) * 0.04));
+        cx.font = '500 ' + fs + 'px Archivo, Arial, sans-serif'; cx.textAlign = 'right'; cx.textBaseline = 'top';
+        cx.fillStyle = '#fff'; cx.shadowColor = 'rgba(0,0,0,0.75)'; cx.shadowBlur = fs * 0.25;
+        carimbo.forEach((t, i) => cx.fillText(t, w - fs * 0.8, fs * 0.8 + i * fs * 1.2));
+      }
       const m = Math.min(1, 160 / Math.max(w, h)), c2 = document.createElement('canvas');
       c2.width = Math.round(w * m); c2.height = Math.round(h * m); c2.getContext('2d').drawImage(c, 0, 0, c2.width, c2.height);
-      URL.revokeObjectURL(url); ok({img: c.toDataURL('image/jpeg', qual), mini: c2.toDataURL('image/jpeg', 0.6), w, h, leg: ''});
+      URL.revokeObjectURL(url); ok({img: c.toDataURL('image/jpeg', qual), mini: c2.toDataURL('image/jpeg', 0.6), w, h, leg: '', em: new Date(file.lastModified || Date.now()).toISOString()});
     };
     im.onerror = () => { URL.revokeObjectURL(url); err(new Error('foto')); };
     im.src = url;
@@ -1775,9 +1799,10 @@ function reduzFoto(file, lado = 1100, qual = 0.68){
 document.getElementById('vAddFoto').addEventListener('click', () => document.getElementById('vFotoIn').click());
 document.getElementById('vFotoIn').addEventListener('change', async e => {
   const arqs = [...e.target.files]; e.target.value = '';
+  const lote = await loteCarimbo(arqs, msgV);
   for (const f of arqs) {
     if (vEst.fotos.length >= 20) { mostra(msgV, 'Limite de 20 fotos por vistoria.', true); break; }
-    try { vEst.fotos.push(await reduzFoto(f)); } catch (_) { mostra(msgV, 'Uma das fotos não pôde ser lida.', true); }
+    try { vEst.fotos.push(await reduzFoto(f, 1100, 0.68, carimboDe(f, lote))); } catch (_) { mostra(msgV, 'Uma das fotos não pôde ser lida.', true); }
   }
   renderFotosV();
 });
@@ -1789,9 +1814,9 @@ function abreFormV(v){
   editandoV = v ? v.id : null; confirmaExclusaoV = false;
   const base = v || {numero: proximoNumeroV(), data: hoje(), hora: new Date().toTimeString().slice(0, 5)};
   CHAVES_V.forEach(k => { document.getElementById('v_' + k).value = base[k] || ''; });
-  vEst = {itens: {...(base.itens || {})}, motivo: base.motivo || '', comb: base.comb || '', pneus: base.pneus || '', fotos: (base.fotos || []).map(f => ({...f}))};
+  vEst = {itens: {...(base.itens || {})}, motivo: base.motivo || '', comb: base.comb || '', pneus: base.pneus || '', fotos: (base.fotos || []).map(f => ({...f})), marcas: (base.marcas || []).map(m => ({...m}))};
   document.getElementById('vPlat').checked = !!base.plat;
-  renderSegsV(); renderItensV(); renderFotosV();
+  renderSegsV(); renderItensV(); renderFotosV(); renderCarro('V');
   document.getElementById('tituloFormV').textContent = v ? 'Editar vistoria' : 'Nova vistoria';
   document.getElementById('excluiV').hidden = !v;
   document.getElementById('excluiV').textContent = 'Excluir vistoria';
@@ -1800,7 +1825,7 @@ function abreFormV(v){
   padCli.ajusta(base.assCli); padMot.ajusta(base.assMot);
   document.getElementById('blocoEnt').hidden = !v;
   const ent = v && v.ent;
-  eEst = {ativo: false, itens: {...((ent && ent.itens) || {})}, fotos: ((ent && ent.fotos) || []).map(f => ({...f}))};
+  eEst = {ativo: false, itens: {...((ent && ent.itens) || {})}, fotos: ((ent && ent.fotos) || []).map(f => ({...f})), marcas: ((ent && ent.marcas) || []).map(m => ({...m}))};
   Object.entries(EF).forEach(([k, id]) => { document.getElementById(id).value = (ent && ent[k]) || ''; });
   mostraEnt(!!ent, ent);
   formV.scrollIntoView({behavior: 'smooth', block: 'start'});
@@ -1814,10 +1839,10 @@ function coletaV(){
   v.placa = v.placa.toUpperCase();
   v.pdfEm = prev.pdfEm; v.fotosLimpas = prev.fotosLimpas;
   Object.assign(v, {motivo: vEst.motivo, plat: document.getElementById('vPlat').checked, comb: vEst.comb, pneus: vEst.pneus,
-                    itens: vEst.itens, fotos: vEst.fotos, assCli: padCli.dados(), assMot: padMot.dados()});
+                    itens: vEst.itens, fotos: vEst.fotos, marcas: vEst.marcas || [], assCli: padCli.dados(), assMot: padMot.dados()});
   v.assEm = (v.assCli || v.assMot) ? (prev.assEm || new Date().toISOString()) : '';
   if (eEst.ativo) {
-    const ent = {itens: eEst.itens, fotos: eEst.fotos, assRec: padRec.dados(), assMot: padMotE.dados()};
+    const ent = {itens: eEst.itens, marcas: eEst.marcas || [], fotos: eEst.fotos, assRec: padRec.dados(), assMot: padMotE.dados()};
     Object.entries(EF).forEach(([k, id]) => { ent[k] = document.getElementById(id).value.trim(); });
     ent.assEm = (ent.assRec || ent.assMot) ? ((prev.ent || {}).assEm || new Date().toISOString()) : '';
     v.ent = ent;
@@ -1853,7 +1878,7 @@ function renderListaV(){
   const q = buscaV.value.trim().toLowerCase();
   const l = listaV.slice().sort((a, b) => (b.criado || 0) - (a.criado || 0));
   showV(q ? l.filter(v => [v.numero, v.placa, v.prop, v.veic, v.cia, v.data].join(' ').toLowerCase().includes(q)) : l);
-  atualizaEspaco();
+  atualizaEspaco(); avisaBackup();
 }
 buscaV.addEventListener('input', renderListaV);
 async function carregaV(){
@@ -1949,11 +1974,13 @@ function montaPDF(v){
   y += 52 + 4;
   linha([A, w2, 'Combustível', v.comb], [B, w2, 'Pneus', v.pneus]);
 
-  nova(30);
+  nova(76);
   d.setFont('helvetica', 'bold'); d.setFontSize(9); d.setTextColor(0); d.text('OBSERVAÇÕES / AVARIAS', M, y); y += 4;
-  d.setFont('helvetica', 'normal'); d.setFontSize(10);
-  const L = d.splitTextToSize(v.obs || '-', W - 2 * M);
-  nova(L.length * 4.5 + 4); d.text(L, M, y + 3); y += L.length * 4.5 + 6;
+  desenhaCarro(d, M, y, 34, v.marcas || []);
+  d.setFont('helvetica', 'normal'); d.setFontSize(10); d.setTextColor(0);
+  d.text(d.splitTextToSize(v.obs || '-', W - 2 * M - 42), M + 42, y + 3);
+  d.setFontSize(7); d.setTextColor(110); d.text('A = avaria   D = dano', M + 42, y + 66);
+  y += 72;
 
   nova(62);
   d.setFont('helvetica', 'bold'); d.setFontSize(8.5); d.text('O MOTORISTA NÃO ESTÁ AUTORIZADO A INDICAR A OFICINA.', M, y); y += 4;
@@ -1996,11 +2023,13 @@ function montaPDF(v){
       d.setFont('helvetica', 'bold'); d.setFontSize(9); d.setTextColor(0); d.text('DIVERGÊNCIAS EM RELAÇÃO À RETIRADA', M, y); y += 4;
       d.setFont('helvetica', 'normal'); d.setFontSize(9); d.text(L1, M, y + 3); y += L1.length * 4.2 + 5;
     }
-    nova(30);
-    d.setFont('helvetica', 'bold'); d.setFontSize(9); d.setTextColor(0); d.text('OBSERVAÇÕES DA ENTREGA', M, y); y += 4;
-    d.setFont('helvetica', 'normal'); d.setFontSize(10);
-    const L2 = d.splitTextToSize(en.obs || '-', W - 2 * M);
-    nova(L2.length * 4.5 + 4); d.text(L2, M, y + 3); y += L2.length * 4.5 + 6;
+    nova(76);
+    d.setFont('helvetica', 'bold'); d.setFontSize(9); d.setTextColor(0); d.text('OBSERVAÇÕES DA ENTREGA / AVARIAS', M, y); y += 4;
+    desenhaCarro(d, M, y, 34, en.marcas || []);
+    d.setFont('helvetica', 'normal'); d.setFontSize(10); d.setTextColor(0);
+    d.text(d.splitTextToSize(en.obs || '-', W - 2 * M - 42), M + 42, y + 3);
+    d.setFontSize(7); d.setTextColor(110); d.text('A = avaria   D = dano', M + 42, y + 66);
+    y += 72;
     assina([[A, 'Quem recebeu o veículo', en.nomeRec, en.docRec, en.assRec], [B, 'Motorista', en.nomeMot, en.docMot, en.assMot]]);
     if (en.assEm) { d.setFontSize(7); d.setTextColor(110); d.text('Assinado em ' + new Date(en.assEm).toLocaleString('pt-BR'), M, y); y += 4; }
     fotosPDF('FOTOS DA ENTREGA', en.fotos || []);
@@ -2194,12 +2223,13 @@ document.getElementById('backupV').addEventListener('click', async () => {
   const blob = new Blob([JSON.stringify({tipo: 'vistorias-guincho', versao: 1, criadoEm: new Date().toISOString(), itens})], {type: 'application/json'});
   const nome = 'vistorias-' + hoje() + '.json', arq = new File([blob], nome, {type: 'application/json'});
   if (navigator.canShare && navigator.canShare({files: [arq]})) {
-    try { await navigator.share({files: [arq], title: nome}); mostra(msg, 'Backup enviado. As fotos grandes ficam nos PDFs.', false); return; }
+    try { await navigator.share({files: [arq], title: nome}); marcaBackup('vist'); mostra(msg, 'Backup enviado. As fotos grandes ficam nos PDFs.', false); return; }
     catch (e) { if (e.name === 'AbortError') return; }
   }
   const url = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
+  marcaBackup('vist');
   mostra(msg, 'Backup baixado em Arquivos > Downloads. Ele guarda os dados, assinaturas e miniaturas; as fotos grandes ficam nos PDFs.', false);
 });
 document.getElementById('restauraV').addEventListener('click', () => document.getElementById('restauraIn').click());
@@ -2215,6 +2245,106 @@ document.getElementById('restauraIn').addEventListener('change', async e => {
     mostra(msg, n + ' vistoria(s) restaurada(s).', false);
   } catch (_) { mostra(msg, 'Arquivo de backup inválido.', true); }
 });
+
+/* ---------- carimbo (data, hora e local) nas fotos ---------- */
+const textoData = d => d.toLocaleDateString('pt-BR', {day: 'numeric', month: 'short', year: 'numeric'}) + ', ' + d.toLocaleTimeString('pt-BR');
+const recenteF = f => Math.abs(Date.now() - (f.lastModified || 0)) < 10 * 60000;
+const GEO_CACHE = {};
+function pegaLocal(){
+  return new Promise(ok => {
+    if (!navigator.geolocation) return ok(null);
+    navigator.geolocation.getCurrentPosition(p => ok({lat: p.coords.latitude, lon: p.coords.longitude}), () => ok(null), {enableHighAccuracy: true, timeout: 7000, maximumAge: 60000});
+  });
+}
+async function enderecoDe(loc){
+  const k = loc.lat.toFixed(4) + ',' + loc.lon.toFixed(4);
+  if (GEO_CACHE[k]) return GEO_CACHE[k];
+  try {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 4000);
+    const r = await fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&accept-language=pt-BR&lat=' + loc.lat + '&lon=' + loc.lon, {signal: ctl.signal});
+    clearTimeout(t);
+    const a = (await r.json()).address || {}, uf = ((a['ISO3166-2-lvl4'] || '').split('-')[1]) || '';
+    const linhas = [[a.road, a.house_number].filter(Boolean).join(', '), a.suburb || a.neighbourhood || a.quarter,
+      [a.city || a.town || a.village || a.municipality, uf].filter(Boolean).join(' '), a.postcode, a.country].filter(Boolean);
+    if (linhas.length) return (GEO_CACHE[k] = linhas);
+  } catch (_) {}
+  return null;
+}
+async function loteCarimbo(arqs, msg){
+  if (!document.getElementById('carimboOn').checked) return null;
+  if (!arqs.some(recenteF)) return {loc: null, end: null};
+  mostra(msg, 'Obtendo a localização...', false);
+  const loc = await pegaLocal(), end = loc ? await enderecoDe(loc) : null;
+  mostra(msg, loc ? '' : 'Sem localização: as fotos saem só com data e hora.', false);
+  return {loc, end};
+}
+function carimboDe(f, lote){
+  if (!lote) return null;
+  const linhas = [textoData(new Date(f.lastModified || Date.now()))];
+  if (lote.loc && recenteF(f)) {
+    if (lote.end) linhas.push(...lote.end);
+    linhas.push(lote.loc.lat.toFixed(5) + ', ' + lote.loc.lon.toFixed(5));
+  }
+  return linhas;
+}
+try { document.getElementById('carimboOn').checked = localStorage.getItem('carimboV') !== '0'; } catch (_) {}
+document.getElementById('carimboOn').addEventListener('change', e => { try { localStorage.setItem('carimboV', e.target.checked ? '1' : '0'); } catch (_) {} });
+
+/* ---------- desenho do carro para marcar avarias ---------- */
+const CARRO_SVG = '<g fill="none" stroke="currentColor" stroke-width="1.6"><rect x="22" y="8" width="56" height="184" rx="22"/><polygon points="30,58 70,58 66,82 34,82"/><rect x="32" y="86" width="36" height="40" rx="6"/><polygon points="34,130 66,130 70,152 30,152"/><rect x="12" y="34" width="10" height="26" rx="3"/><rect x="78" y="34" width="10" height="26" rx="3"/><rect x="12" y="140" width="10" height="26" rx="3"/><rect x="78" y="140" width="10" height="26" rx="3"/><rect x="15" y="68" width="8" height="10" rx="2"/><rect x="77" y="68" width="8" height="10" rx="2"/></g><text x="50" y="22" text-anchor="middle" font-size="8" fill="currentColor">FRENTE</text><text x="50" y="188" text-anchor="middle" font-size="8" fill="currentColor">TRASEIRA</text>';
+const carroTipo = {V: 'A', E: 'A'};
+const marcasDe = k => { const o = k === 'V' ? vEst : eEst; return o.marcas || (o.marcas = []); };
+function renderCarro(k){
+  document.getElementById('carro' + k).innerHTML = '<svg viewBox="0 0 100 200" role="img" aria-label="Desenho do veículo">' + CARRO_SVG +
+    marcasDe(k).map(m => `<g><circle cx="${m.x}" cy="${m.y}" r="6" fill="#c0392b"/><text x="${m.x}" y="${m.y + 3.6}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">${m.t}</text></g>`).join('') + '</svg>';
+}
+formV.addEventListener('click', e => {
+  const sg = e.target.closest('button[data-carro][data-t]');
+  if (sg) { carroTipo[sg.dataset.carro] = sg.dataset.t; sg.parentNode.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === sg))); return; }
+  const un = e.target.closest('button[data-carro-desfaz]');
+  if (un) { marcasDe(un.dataset.carroDesfaz).pop(); renderCarro(un.dataset.carroDesfaz); return; }
+  const box = e.target.closest('.carro');
+  if (box) {
+    const k = box.id.slice(5), svg = box.querySelector('svg'), r = svg.getBoundingClientRect(), m = marcasDe(k);
+    const x = Math.round((e.clientX - r.left) / r.width * 1000) / 10, y = Math.round((e.clientY - r.top) / r.height * 2000) / 10;
+    if (x < 0 || x > 100 || y < 0 || y > 200) return;
+    const perto = m.findIndex(q => Math.hypot(q.x - x, q.y - y) < 7);
+    if (perto >= 0) m.splice(perto, 1); else m.push({x, y, t: carroTipo[k]});
+    renderCarro(k);
+  }
+});
+function desenhaCarro(d, x, y, larg, marcas){
+  const s = larg / 100;
+  d.setDrawColor(60); d.setLineWidth(0.3);
+  d.roundedRect(x + 22 * s, y + 8 * s, 56 * s, 184 * s, 22 * s, 22 * s);
+  d.lines([[40, 0], [-4, 24], [-32, 0]], x + 30 * s, y + 58 * s, [s, s], 'S', true);
+  d.roundedRect(x + 32 * s, y + 86 * s, 36 * s, 40 * s, 6 * s, 6 * s);
+  d.lines([[32, 0], [4, 22], [-40, 0]], x + 34 * s, y + 130 * s, [s, s], 'S', true);
+  [[12, 34], [78, 34], [12, 140], [78, 140]].forEach(([a, b]) => d.roundedRect(x + a * s, y + b * s, 10 * s, 26 * s, 3 * s, 3 * s));
+  [[15, 68], [77, 68]].forEach(([a, b]) => d.roundedRect(x + a * s, y + b * s, 8 * s, 10 * s, 2 * s, 2 * s));
+  d.setFont('helvetica', 'normal'); d.setFontSize(5); d.setTextColor(90);
+  d.text('FRENTE', x + 50 * s, y + 20 * s, {align: 'center'}); d.text('TRASEIRA', x + 50 * s, y + 186 * s, {align: 'center'});
+  (marcas || []).forEach(m => {
+    d.setFillColor(192, 57, 43); d.circle(x + m.x * s, y + m.y * s, 6 * s, 'F');
+    d.setFont('helvetica', 'bold'); d.setFontSize(6); d.setTextColor(255); d.text(m.t, x + m.x * s, y + m.y * s + 0.9, {align: 'center'});
+  });
+  d.setTextColor(0);
+}
+
+/* ---------- lembrete de backup ---------- */
+const lerBk = k => { try { return Number(localStorage.getItem(k)) || 0; } catch (_) { return 0; } };
+function marcaBackup(k){ try { localStorage.setItem('bk_' + k, String(Date.now())); } catch (_) {} avisaBackup(); }
+function avisaBackup(){
+  try { if (!lerBk('bk_ini')) localStorage.setItem('bk_ini', String(Date.now())); } catch (_) {}
+  const dias = k => Math.floor((Date.now() - (lerBk('bk_' + k) || lerBk('bk_ini') || Date.now())) / 864e5);
+  const dd = dias('dados'), dv = dias('vist'), velhoV = listaV.length > 0 && dv >= 7, velhoD = dd >= 7;
+  document.getElementById('avisoBk').hidden = !(velhoD || velhoV);
+  document.getElementById('irBkDados').hidden = !velhoD;
+  document.getElementById('irBkVist').hidden = !velhoV;
+  document.getElementById('avisoBkTxt').textContent = 'Hora de fazer backup: ' + [velhoD ? 'dados (há ' + dd + ' dias)' : '', velhoV ? 'vistorias (há ' + dv + ' dias)' : ''].filter(Boolean).join(' e ') + '.';
+}
+document.getElementById('irBkDados').addEventListener('click', () => { document.querySelector('[data-tab="caixa"]').click(); document.getElementById('backup').scrollIntoView({behavior: 'smooth', block: 'center'}); });
+document.getElementById('irBkVist').addEventListener('click', () => { document.querySelector('[data-tab="vist"]').click(); const dt2 = document.getElementById('espacoV'); dt2.open = true; dt2.scrollIntoView({behavior: 'smooth', block: 'center'}); });
 
 carregaV();
 
@@ -2278,6 +2408,7 @@ const textoBackup = () => JSON.stringify({exportadoEm: new Date().toISOString(),
 document.getElementById('backup').addEventListener('click', async () => {
   const r = await salvarArquivo(`guincho-backup-${hoje()}.json`, textoBackup(), 'application/json');
   mostra(msgB, r.msg, r.erro);
+  if (!r.erro) marcaBackup('dados');
 });
 
 async function copiarTexto(texto){
