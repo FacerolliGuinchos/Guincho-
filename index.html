@@ -153,8 +153,8 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
   <div class="status" id="statusSalvo" role="status" hidden></div>
 
   <nav role="tablist">
-    <button role="tab" data-tab="serv" aria-selected="true">Serviços</button>
-    <button role="tab" data-tab="vist" aria-selected="false">Vistoria</button>
+    <button role="tab" data-tab="vist" aria-selected="true">Vistoria</button>
+    <button role="tab" data-tab="serv" aria-selected="false">Serviços</button>
     <button id="btnMais" aria-haspopup="true" aria-expanded="false" aria-selected="false" aria-label="Mais opções">•••</button>
   </nav>
   <div id="menuMais" role="menu" hidden>
@@ -173,7 +173,7 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
   </div>
 
   <!-- SERVIÇOS -->
-  <section id="serv">
+  <section id="serv" hidden>
     <button class="btn sec" id="abreFormS" type="button">Novo serviço</button>
     <div class="form" id="formS" hidden>
       <h2 class="titulo-form" id="tituloFormS">Novo serviço</h2>
@@ -376,7 +376,7 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
   </section>
 
   <!-- VISTORIA -->
-  <section id="vist" hidden>
+  <section id="vist">
     <p class="explica">Vistoria do veículo com fotos e assinatura do cliente. Gera um PDF para enviar.</p>
     <p class="explica" id="offStatus"></p>
     <p class="explica" id="avisoEspaco" hidden></p>
@@ -415,6 +415,8 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
       <label>Assinatura do cliente</label>
       <canvas class="padv" id="padCli"></canvas>
       <button class="btn mini sec" id="limpaCli" type="button">Limpar assinatura</button>
+      <label for="vMotSel">Motorista cadastrado</label>
+      <select id="vMotSel"></select>
       <div class="grid2">
         <div><label for="v_nomeMot">Motorista: nome</label><input id="v_nomeMot" type="text"></div>
         <div><label for="v_rgMot">Documento</label><input id="v_rgMot" type="text" placeholder="CPF, CNH ou RG"></div>
@@ -502,6 +504,27 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
     <div id="listV"></div>
     <button class="more" id="maisV" hidden>Mostrar mais</button>
     <p class="msg" id="msgListaV" role="status"></p>
+
+    <details class="form" id="motoV">
+      <summary>Motoristas cadastrados</summary>
+      <p class="explica">Cadastre uma vez o nome, o documento e a assinatura. Nas vistorias novas eles já vêm preenchidos.</p>
+      <div id="motoLista"></div>
+      <button class="btn sec" id="abreMot" type="button">Cadastrar motorista</button>
+      <div id="formMot" hidden>
+        <h2 class="titulo-form" id="tituloMot">Novo motorista</h2>
+        <label for="moNome">Nome</label>
+        <input id="moNome" type="text">
+        <label for="moDoc">Documento</label>
+        <input id="moDoc" type="text" placeholder="CPF, CNH ou RG">
+        <label>Assinatura</label>
+        <canvas class="padv" id="padMotCad"></canvas>
+        <button class="btn mini sec" id="limpaMotCad" type="button">Limpar assinatura</button>
+        <button class="btn" id="salvaMot" type="button">Salvar motorista</button>
+        <button class="btn sec" id="cancelaMot" type="button">Fechar</button>
+        <button class="btn perigo" id="excluiMot" type="button" hidden>Excluir motorista</button>
+        <p class="msg" id="msgMot" role="status"></p>
+      </div>
+    </details>
 
     <details class="form" id="espacoV">
       <summary>Espaço e backup das vistorias</summary>
@@ -674,6 +697,13 @@ const periodoMes = off => { const h = new Date(); return {de: ymd(new Date(h.get
 const novoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const mostra = (el, texto, erro) => { el.textContent = texto; el.classList.toggle('erro', !!erro); };
 const comissaoDe = (valor, despesa) => { const b = (valor || 0) - (despesa || 0); return b > 0 ? b * TAXA : 0; };
+/* rotas locais (Iguape / Ilha Comprida): comissão fixa, a partir da data abaixo */
+const COM_FIXA = 60, DATA_FIXA = '2026-11-16';
+const normCid = t => { const c = (t || '').trim().toLowerCase(); return c === 'ilha' ? 'ilha comprida' : c; };
+const ROTA_LOCAL = new Set(['iguape', 'ilha comprida']);
+const ehRotaFixa = x => (x.data || '') >= DATA_FIXA && ROTA_LOCAL.has(normCid(x.saida)) && ROTA_LOCAL.has(normCid(x.destino));
+const contaCom = x => (x.valor || 0) > 0 || ehRotaFixa(x);
+const comServ = x => ehRotaFixa(x) ? COM_FIXA : comissaoDe(x.valor, x.despesa);
 const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const capital = s => s.replace(/^./, c => c.toUpperCase());
 
@@ -698,9 +728,9 @@ const rotuloQuinzena = chave => {
 
 /* ---------- dados locais (somente neste aparelho) ---------- */
 /* Guardados em duas gavetas do navegador (localStorage e IndexedDB). Se uma falhar, a outra segura. */
-let NOVOS = {servicos: [], caixa: [], recebidos: {}, ajustes: {}, pagamentos: [], taxi: [], veiculos: [], manut: [], veicIni: false, salvoEm: 0};
+let NOVOS = {servicos: [], caixa: [], recebidos: {}, ajustes: {}, pagamentos: [], taxi: [], veiculos: [], manut: [], motoristas: [], veicIni: false, salvoEm: 0};
 const estado = {ls: null, idb: null};
-const normaliza = v => ({servicos: v.servicos, caixa: v.caixa, recebidos: v.recebidos || {}, ajustes: v.ajustes || {}, pagamentos: v.pagamentos || [], taxi: Array.isArray(v.taxi) ? v.taxi : [], veiculos: Array.isArray(v.veiculos) ? v.veiculos : [], manut: Array.isArray(v.manut) ? v.manut : [], veicIni: !!v.veicIni, salvoEm: v.salvoEm || 0});
+const normaliza = v => ({servicos: v.servicos, caixa: v.caixa, recebidos: v.recebidos || {}, ajustes: v.ajustes || {}, pagamentos: v.pagamentos || [], taxi: Array.isArray(v.taxi) ? v.taxi : [], veiculos: Array.isArray(v.veiculos) ? v.veiculos : [], manut: Array.isArray(v.manut) ? v.manut : [], motoristas: Array.isArray(v.motoristas) ? v.motoristas : [], veicIni: !!v.veicIni, salvoEm: v.salvoEm || 0});
 const valido = v => v && Array.isArray(v.servicos) && Array.isArray(v.caixa);
 
 const IDB = {
@@ -851,9 +881,10 @@ let servicos = [], caixa = [];
 const renderServico = x => {
   const temValor = (x.valor || 0) > 0;
   const temDesp = (x.despesa || 0) > 0;
-  const pagoX = temValor && estaPago(x, MAPA_PAGOS);
-  const etiqueta = temValor ? (pagoX ? '<span class="etq pago">Pago</span>' : '<span class="etq aberto">A receber</span>') : '';
-  const com = comissaoDe(x.valor, x.despesa);
+  const conta = contaCom(x);
+  const pagoX = conta && estaPago(x, MAPA_PAGOS);
+  const etiqueta = conta ? (pagoX ? '<span class="etq pago">Pago</span>' : '<span class="etq aberto">A receber</span>') : '';
+  const com = comServ(x);
   return `
   <div class="card${pagoX ? ' pago' : ''}">
     <div class="top"><span>${dt(x.data)}</span>${etiqueta}</div>
@@ -864,7 +895,7 @@ const renderServico = x => {
     ${(temValor || temDesp || !ehBase(x.id)) ? `<div class="linha-valores">
         <div><span>Valor </span><b>${temValor ? fmt(x.valor) : 'a definir'}</b></div>
         ${temDesp ? `<div><span>Despesa </span><b>${fmt(x.despesa)}${x.pagoCom ? ' · ' + esc(x.pagoCom) : ''}</b></div>` : ''}
-        ${temValor ? `<div><span>Comissão </span><b class="com">${fmt(com)}</b></div>` : ''}
+        ${conta ? `<div><span>Comissão </span><b class="com">${fmt(com)}${ehRotaFixa(x) ? ' (fixo)' : ''}</b></div>` : ''}
       </div>` : ''}
     ${x.recebido ? '<div class="sub">Recebido · entrou no Caixa</div>' : ''}
     <div class="acoes"><button class="btn mini sec" data-editar="${esc(x.id)}" type="button">Editar</button></div>
@@ -914,11 +945,13 @@ function atualizaDica(){
 }
 function atualizaPrevia(){
   const valor = num(elSValor.value);
-  document.getElementById('prevCom').textContent = valor > 0 ? fmt(comissaoDe(valor, num(elSDesp.value))) : 'a definir';
+  const fixa = ehRotaFixa({data: document.getElementById('sData').value, saida: document.getElementById('sSaida').value, destino: document.getElementById('sDest').value});
+  document.getElementById('prevCom').textContent = fixa ? fmt(COM_FIXA) + ' (valor fixo da rota)' : valor > 0 ? fmt(comissaoDe(valor, num(elSDesp.value))) : 'a definir';
   atualizaDica();
 }
 elSValor.addEventListener('input', atualizaPrevia);
 elSDesp.addEventListener('input', atualizaPrevia);
+['sData', 'sSaida', 'sDest'].forEach(id => document.getElementById(id).addEventListener('input', atualizaPrevia));
 
 const elTipo = document.getElementById('sTipo');
 const elCia = document.getElementById('sCia');
@@ -1034,13 +1067,13 @@ document.getElementById('excluiS').addEventListener('click', () => {
 let MAPA_PAGOS = new Map();
 const montaMapaPagos = () => { const m = new Map(); NOVOS.pagamentos.forEach(p => p.ids.forEach(id => m.set(id, p))); return m; };
 const estaPago = (x, mapa) => mapa.has(x.id);
-const comDe = x => comissaoDe(x.valor, x.despesa);
+const comDe = comServ;
 let pgTocado = false;
 const elPgDe = document.getElementById('pgDe'), elPgAte = document.getElementById('pgAte');
 
 function abertosNoPeriodo(de, ate){
   if (!de || !ate || de > ate) return [];
-  return servicosAtuais().filter(x => x.data && x.valor > 0 && x.data >= de && x.data <= ate && !estaPago(x, MAPA_PAGOS));
+  return servicosAtuais().filter(x => x.data && contaCom(x) && x.data >= de && x.data <= ate && !estaPago(x, MAPA_PAGOS));
 }
 function atualizaPrevPg(){
   const sel = abertosNoPeriodo(elPgDe.value, elPgAte.value);
@@ -1055,14 +1088,14 @@ elPgAte.addEventListener('input', () => { pgTocado = true; atualizaPrevPg(); });
 
 function renderComissoes(){
   const todos = servicosAtuais();
-  const comValor = todos.filter(x => x.data && x.valor > 0).sort(byDataAsc);
+  const comValor = todos.filter(x => x.data && contaCom(x)).sort(byDataAsc);
   const abertos = comValor.filter(x => !estaPago(x, MAPA_PAGOS));
   const pagosL = comValor.filter(x => estaPago(x, MAPA_PAGOS));
   const soma = (l, f) => l.reduce((s, x) => s + f(x), 0);
   document.getElementById('tPend').textContent = fmt(soma(abertos, comDe));
   document.getElementById('tRec').textContent = fmt(soma(pagosL, comDe));
 
-  const sem = todos.filter(x => !ehBase(x.id) && !(x.valor > 0)).length;
+  const sem = todos.filter(x => !ehBase(x.id) && !contaCom(x)).length;
   const aviso = document.getElementById('semMes');
   if (sem > 0) { aviso.textContent = `${plural(sem, 'serviço está', 'serviços estão')} sem valor e não ${sem === 1 ? 'entra' : 'entram'} nas comissões até você informar o valor.`; aviso.hidden = false; }
   else if (!comValor.length) { aviso.textContent = 'Ainda não há serviços com valor cadastrado. Edite um serviço e informe o valor para ver a comissão aqui.'; aviso.hidden = false; }
@@ -1443,10 +1476,10 @@ function gerarResumo(){
   document.getElementById('rPart').textContent = part;
   document.getElementById('rValor').textContent = fmt(soma('valor'));
   document.getElementById('rDesp').textContent = fmt(soma('despesa'));
-  document.getElementById('rCom').textContent = fmt(comValor.reduce((s, x) => s + comissaoDe(x.valor, x.despesa), 0));
+  document.getElementById('rCom').textContent = fmt(lista.filter(contaCom).reduce((s, x) => s + comServ(x), 0));
   const avisos = [];
   if (sem > 0) avisos.push(`${plural(sem, 'serviço está', 'serviços estão')} sem tipo (nem Seguro nem Particular).`);
-  const sv = lista.length - comValor.length;
+  const sv = lista.filter(x => !contaCom(x)).length;
   if (sv > 0) avisos.push(`${plural(sv, 'serviço não tem', 'serviços não têm')} valor cadastrado e não entra no valor, nas despesas nem na comissão.`);
   document.getElementById('rAviso').textContent = avisos.join(' ');
   document.getElementById('saidaRes').hidden = false;
@@ -1903,7 +1936,7 @@ document.getElementById('vFotoIn').addEventListener('change', async e => {
 
 const proximoNumeroV = () => { const n = listaV.map(v => parseInt(v.numero, 10)).filter(Number.isFinite); return String((n.length ? Math.max(...n) : 0) + 1); };
 
-function abreFormV(v){
+let abreFormV = function(v){
   document.getElementById('formP').hidden = true;
   editandoV = v ? v.id : null; confirmaExclusaoV = false;
   const base = v || {numero: proximoNumeroV(), data: hoje(), hora: new Date().toTimeString().slice(0, 5)};
@@ -1924,6 +1957,7 @@ function abreFormV(v){
   mostraEnt(!!ent, ent);
   formV.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
+;
 function fechaFormV(){ formV.hidden = true; editandoV = null; confirmaExclusaoV = false; }
 
 function coletaV(){
@@ -2651,6 +2685,72 @@ document.getElementById('excluiVe').addEventListener('click', () => {
   gravaLocal(); fechaFormVei(); renderManutTudo();
 });
 
+/* ---------- motoristas cadastrados (assinatura guardada uma vez) ---------- */
+const motoristasM = () => Array.isArray(NOVOS.motoristas) ? NOVOS.motoristas : (NOVOS.motoristas = []);
+const selMot = document.getElementById('vMotSel');
+let editandoMot = null, confirmaExclusaoMot = false;
+function renderMotSel(valor){
+  const atual = valor !== undefined ? valor : selMot.value;
+  selMot.innerHTML = '<option value="">- escolher -</option>' + motoristasM().map(m => `<option value="${esc(m.id)}">${esc(m.nome)}</option>`).join('');
+  selMot.value = motoristasM().some(m => m.id === atual) ? atual : '';
+}
+function aplicaMotorista(id, alvo){
+  const m = motoristasM().find(x => x.id === id); if (!m) return;
+  if (alvo !== 'ent') { document.getElementById('v_nomeMot').value = m.nome || ''; document.getElementById('v_rgMot').value = m.doc || ''; padMot.ajusta(m.ass); }
+  if (alvo !== 'ret' && eEst.ativo) { document.getElementById('v_nomeMotE').value = m.nome || ''; document.getElementById('v_docMotE').value = m.doc || ''; padMotE.ajusta(m.ass); }
+  try { localStorage.setItem('motUltimo', id); } catch (_) {}
+}
+selMot.addEventListener('change', () => { if (selMot.value) aplicaMotorista(selMot.value, 'ambos'); });
+/* vistoria nova: já abre com o último motorista (ou o único cadastrado) */
+const abreFormV_orig = abreFormV;
+abreFormV = function(v){
+  abreFormV_orig(v);
+  let pre = '';
+  if (!v) { try { pre = localStorage.getItem('motUltimo') || ''; } catch (_) {} if (!motoristasM().some(m => m.id === pre)) pre = motoristasM().length === 1 ? motoristasM()[0].id : ''; }
+  renderMotSel(pre);
+  if (pre) aplicaMotorista(pre, 'ret');
+};
+document.getElementById('abreEnt').addEventListener('click', () => { if (selMot.value) aplicaMotorista(selMot.value, 'ent'); });
+
+const formMot = document.getElementById('formMot'), msgMot = document.getElementById('msgMot');
+const padMotCad = criaPad(document.getElementById('padMotCad'));
+document.getElementById('limpaMotCad').addEventListener('click', () => padMotCad.limpa());
+function renderMotLista(){
+  document.getElementById('motoLista').innerHTML = motoristasM().map(m => `<div class="card"><div class="title">${esc(m.nome)}</div><div class="sub">${esc(m.doc) || 'sem documento'} · ${m.ass ? 'assinatura guardada' : 'sem assinatura'}</div><div class="acoes"><button class="btn mini sec" type="button" data-editar-mo="${esc(m.id)}">Editar</button></div></div>`).join('') || '<p class="explica">Nenhum motorista cadastrado.</p>';
+  renderMotSel();
+}
+function abreMot(m){
+  editandoMot = m ? m.id : null; confirmaExclusaoMot = false;
+  document.getElementById('moNome').value = (m && m.nome) || ''; document.getElementById('moDoc').value = (m && m.doc) || '';
+  document.getElementById('tituloMot').textContent = m ? 'Editar motorista' : 'Novo motorista';
+  document.getElementById('excluiMot').hidden = !m; document.getElementById('excluiMot').textContent = 'Excluir motorista';
+  mostra(msgMot, '', false);
+  formMot.hidden = false;
+  padMotCad.ajusta(m && m.ass);
+}
+function fechaMot(){ formMot.hidden = true; editandoMot = null; confirmaExclusaoMot = false; }
+document.getElementById('abreMot').addEventListener('click', () => abreMot(null));
+document.getElementById('cancelaMot').addEventListener('click', fechaMot);
+document.getElementById('motoLista').addEventListener('click', e => {
+  const b = e.target.closest('button[data-editar-mo]'); if (!b) return;
+  const m = motoristasM().find(x => x.id === b.dataset.editarMo); if (m) abreMot(m);
+});
+document.getElementById('salvaMot').addEventListener('click', () => {
+  const nome = document.getElementById('moNome').value.trim();
+  if (!nome) { mostra(msgMot, 'Informe o nome do motorista.', true); return; }
+  const dados = {nome, doc: document.getElementById('moDoc').value.trim(), ass: padMotCad.dados()};
+  if (editandoMot === null) motoristasM().push({id: 'mo' + novoId(), ...dados});
+  else NOVOS.motoristas = motoristasM().map(x => x.id === editandoMot ? {...x, ...dados} : x);
+  gravaLocal(); fechaMot(); renderMotLista();
+});
+document.getElementById('excluiMot').addEventListener('click', () => {
+  const b = document.getElementById('excluiMot');
+  if (!confirmaExclusaoMot) { confirmaExclusaoMot = true; b.textContent = 'Toque de novo para excluir'; return; }
+  NOVOS.motoristas = motoristasM().filter(x => x.id !== editandoMot);
+  gravaLocal(); fechaMot(); renderMotLista();
+});
+renderMotLista();
+
 /* ---------- recálculo geral ---------- */
 function recalcular(){
   servicos = servicosAtuais().sort(byDataDesc);
@@ -2668,6 +2768,7 @@ function recalcular(){
   renderComissoes();
   renderTaxiTudo();
   renderManutTudo();
+  renderMotLista();
 }
 
 /* ---------- salvar arquivo: tenta várias formas ---------- */
@@ -2743,7 +2844,7 @@ function importarDados(dados){
     if (!Array.isArray(NOVOS.taxi)) NOVOS.taxi = [];
     dados.taxi.forEach(t => { if (t && !NOVOS.taxi.some(q => q.id === t.id)) { NOVOS.taxi.push(t); adicionados++; } });
   }
-  ['veiculos', 'manut'].forEach(k => {
+  ['veiculos', 'manut', 'motoristas'].forEach(k => {
     if (!Array.isArray(dados[k])) return;
     if (!Array.isArray(NOVOS[k])) NOVOS[k] = [];
     dados[k].forEach(t => { if (t && !NOVOS[k].some(q => q.id === t.id)) { NOVOS[k].push(t); adicionados++; } });
