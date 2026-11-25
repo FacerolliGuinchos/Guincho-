@@ -134,6 +134,23 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
 .card.venc{border-left:5px solid #c0392b}
 .card.perto{border-left:5px solid var(--amber)}
 #mProx .card{margin:6px 0;padding:10px 12px}
+.slot{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;margin:8px 0}
+.slot .cab{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.slot .cab b{font-size:16px}
+.slot .est{font-size:13px;color:var(--mute);margin-top:2px}
+.slot.tem .est{color:var(--green);font-weight:700}
+.slot .mins{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 2px}
+.slot .min{position:relative;width:64px;height:64px}
+.slot .min img{display:block;width:64px;height:64px;object-fit:cover;border-radius:10px}
+.slot .min button{position:absolute;top:-8px;right:-8px;width:28px;height:28px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--red);font:700 17px/1 Archivo,sans-serif;cursor:pointer}
+fieldset.fs{border:0;padding:0;margin:0;min-width:0}
+fieldset:disabled .edita{display:none}
+fieldset:disabled canvas,fieldset:disabled .carro{pointer-events:none}
+fieldset:disabled input,fieldset:disabled select,fieldset:disabled textarea{color:var(--ink);-webkit-text-fill-color:var(--ink);opacity:1;background:var(--bg)}
+fieldset:disabled button{cursor:default}
+.travado{margin:10px 0;padding:12px 14px;border-radius:12px;background:var(--green-bg);color:var(--green);font-weight:600;line-height:1.4}
+.travado .acoes{margin-top:10px}
+.travado .btn.sec{color:var(--ink);background:var(--card)}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -386,6 +403,11 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
     <button class="btn sec" id="abreFormP" type="button">Ficha em papel (só fotos)</button>
     <div class="form" id="formV" hidden>
       <h2 class="titulo-form" id="tituloFormV">Nova vistoria</h2>
+      <div class="travado" id="avisoTrava" hidden>
+        <div id="txtTrava"></div>
+        <div class="acoes"><button class="btn mini sec" id="reabreRet" type="button" hidden>Reabrir retirada para correção</button><button class="btn mini sec" id="reabreEnt" type="button" hidden>Reabrir entrega para correção</button></div>
+      </div>
+      <fieldset class="fs" id="fsRet">
       <div id="vCampos"></div>
       <label>Motivo da chamada</label>
       <div class="seg quebra" id="vMotivo"></div>
@@ -397,15 +419,15 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
       <label>Avarias (toque no desenho para marcar)</label>
       <div class="seg" id="segCarroV"><button type="button" data-carro="V" data-t="A" aria-pressed="true">A = avaria</button><button type="button" data-carro="V" data-t="D" aria-pressed="false">D = dano</button></div>
       <div class="carro" id="carroV"></div>
-      <button class="btn mini sec" type="button" data-carro-desfaz="V">Desfazer última marca</button>
+      <button class="btn mini sec edita" type="button" data-carro-desfaz="V">Desfazer última marca</button>
       <label>Acessórios / equipamentos</label>
       <p class="explica">Toque para alternar: S = existe, N = não existe, I = incompleto ou avariado.</p>
       <div id="vItens"></div>
       <label for="v_obs">Observações / avarias</label>
       <textarea id="v_obs"></textarea>
       <label>Fotos do veículo</label>
+      <p class="explica">Toque em Adicionar em cada posição. Dá para colocar mais de uma foto em cada uma.</p>
       <input id="vFotoIn" type="file" accept="image/*" multiple hidden>
-      <button class="btn sec" id="vAddFoto" type="button">Adicionar fotos</button>
       <div id="vFotos"></div>
       <p class="explica"><b>O motorista não está autorizado a indicar a oficina.</b> Não nos responsabilizamos por pertences deixados no interior do veículo. Declaro que li, entendi e estou de acordo com as informações contidas neste formulário.</p>
       <div class="grid2">
@@ -414,7 +436,7 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
       </div>
       <label>Assinatura do cliente</label>
       <canvas class="padv" id="padCli"></canvas>
-      <button class="btn mini sec" id="limpaCli" type="button">Limpar assinatura</button>
+      <button class="btn mini sec edita" id="limpaCli" type="button">Limpar assinatura</button>
       <label for="vMotSel">Motorista cadastrado</label>
       <select id="vMotSel"></select>
       <div class="grid2">
@@ -423,28 +445,31 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
       </div>
       <label>Assinatura do motorista</label>
       <canvas class="padv" id="padMot"></canvas>
-      <button class="btn mini sec" id="limpaMot" type="button">Limpar assinatura</button>
+      <button class="btn mini sec edita" id="limpaMot" type="button">Limpar assinatura</button>
+      </fieldset>
       <div id="blocoEnt" hidden>
         <h2 class="titulo-form">Entrega no destino</h2>
         <button class="btn sec" id="abreEnt" type="button">Registrar entrega</button>
         <div id="entCampos" hidden>
-          <p class="explica">Tire as fotos novas e peça a assinatura de quem recebe o veículo.</p>
+          <p class="explica">Tire as fotos da entrega e peça a assinatura de quem recebe o veículo. Avarias e acessórios ficam iguais aos da retirada: registre qualquer diferença nas observações.</p>
+          <fieldset class="fs" id="fsEnt">
           <div class="grid2">
             <div><label for="v_entData">Data da entrega</label><input id="v_entData" type="date"></div>
             <div><label for="v_entHora">Hora</label><input id="v_entHora" type="time"></div>
           </div>
-          <label>Avarias na entrega (começam iguais à retirada)</label>
+          <fieldset class="fs" id="fsEntFix" disabled>
+          <label>Avarias na entrega (iguais à retirada)</label>
           <div class="seg" id="segCarroE"><button type="button" data-carro="E" data-t="A" aria-pressed="true">A = avaria</button><button type="button" data-carro="E" data-t="D" aria-pressed="false">D = dano</button></div>
           <div class="carro" id="carroE"></div>
-          <button class="btn mini sec" type="button" data-carro-desfaz="E">Desfazer última marca</button>
+          <button class="btn mini sec edita" type="button" data-carro-desfaz="E">Desfazer última marca</button>
           <label>Acessórios na entrega</label>
-          <p class="explica">Começam iguais à retirada. Toque só no que estiver diferente.</p>
+          <p class="explica">Iguais aos da retirada.</p>
           <div id="eItens"></div>
+          </fieldset>
           <label for="v_entObs">Observações da entrega</label>
           <textarea id="v_entObs"></textarea>
           <label>Fotos da entrega</label>
           <input id="eFotoIn" type="file" accept="image/*" multiple hidden>
-          <button class="btn sec" id="eAddFoto" type="button">Adicionar fotos</button>
           <div id="eFotos"></div>
           <div class="grid2">
             <div><label for="v_nomeRec">Quem recebe: nome</label><input id="v_nomeRec" type="text"></div>
@@ -452,15 +477,18 @@ nav button{flex:1;padding:11px 6px;font-size:15px}
           </div>
           <label>Assinatura de quem recebe</label>
           <canvas class="padv" id="padRec"></canvas>
-          <button class="btn mini sec" id="limpaRec" type="button">Limpar assinatura</button>
+          <button class="btn mini sec edita" id="limpaRec" type="button">Limpar assinatura</button>
+          <label for="vMotSelE">Motorista cadastrado <small>(começa com o da retirada)</small></label>
+          <select id="vMotSelE"></select>
           <div class="grid2">
             <div><label for="v_nomeMotE">Motorista: nome</label><input id="v_nomeMotE" type="text"></div>
             <div><label for="v_docMotE">Documento</label><input id="v_docMotE" type="text" placeholder="CPF, CNH ou RG"></div>
           </div>
           <label>Assinatura do motorista</label>
           <canvas class="padv" id="padMotE"></canvas>
-          <button class="btn mini sec" id="limpaMotE" type="button">Limpar assinatura</button>
-          <button class="btn perigo" id="descartaEnt" type="button">Remover entrega</button>
+          <button class="btn mini sec edita" id="limpaMotE" type="button">Limpar assinatura</button>
+          <button class="btn perigo edita" id="descartaEnt" type="button">Remover entrega</button>
+          </fieldset>
         </div>
       </div>
       <button class="btn" id="salvaV" type="button">Salvar vistoria</button>
@@ -1840,9 +1868,7 @@ function renderItensE(){
     return `<div class="ckv"><span>${esc(n)}${e !== o ? ` <small style="color:var(--amber)">(era ${o || '—'})</small>` : ''}</span><button type="button" class="ckb ${e}" data-eitem="${i}">${e || '—'}</button></div>`;
   }).join('');
 }
-function renderFotosE(){
-  document.getElementById('eFotos').innerHTML = eEst.fotos.map((f, i) => `<div class="fotov"><img src="${f.mini || f.img}" alt="Foto ${i + 1}"><div><input type="text" placeholder="Legenda (ex.: lateral direita)" value="${esc(f.leg || '')}" data-leg-e="${i}"><button class="btn mini perigo" type="button" data-rmfoto-e="${i}">Remover foto</button></div></div>`).join('');
-}
+function renderFotosE(){ document.getElementById('eFotos').innerHTML = htmlFotos(eEst.fotos, '-e', 'E'); }
 function mostraEnt(ativo, ent){
   eEst.ativo = ativo; confirmaDescartaE = false;
   document.getElementById('descartaEnt').textContent = 'Remover entrega';
@@ -1855,7 +1881,7 @@ document.getElementById('abreEnt').addEventListener('click', () => {
   Object.values(EF).forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('v_entData').value = hoje();
   document.getElementById('v_entHora').value = new Date().toTimeString().slice(0, 5);
-  mostraEnt(true, null);
+  travaEnt = false; mostraEnt(true, null); aplicaTrava();
   document.getElementById('entCampos').scrollIntoView({behavior: 'smooth', block: 'start'});
 });
 formV.addEventListener('click', e => {
@@ -1865,13 +1891,12 @@ formV.addEventListener('click', e => {
   if (rm) { eEst.fotos.splice(Number(rm.dataset.rmfotoE), 1); renderFotosE(); }
 });
 formV.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.legE !== undefined) eEst.fotos[Number(e.target.dataset.legE)].leg = e.target.value; });
-document.getElementById('eAddFoto').addEventListener('click', () => document.getElementById('eFotoIn').click());
 document.getElementById('eFotoIn').addEventListener('change', async ev => {
   const arqs = [...ev.target.files]; ev.target.value = '';
   const lote = await loteCarimbo(arqs, msgV);
   for (const f of arqs) {
-    if (eEst.fotos.length >= 20) { mostra(msgV, 'Limite de 20 fotos por etapa.', true); break; }
-    try { eEst.fotos.push(await reduzFoto(f, 1100, 0.68, carimboDe(f, lote))); } catch (_) { mostra(msgV, 'Uma das fotos não pôde ser lida.', true); }
+    if (eEst.fotos.length >= LIM_FOTOS) { mostra(msgV, 'Limite de ' + LIM_FOTOS + ' fotos por etapa.', true); break; }
+    try { const ft = await reduzFoto(f, 1100, 0.68, carimboDe(f, lote)); ft.pos = alvoFoto.E; if (ft.pos) ft.leg = nomePos(ft.pos); eEst.fotos.push(ft); } catch (_) { mostra(msgV, 'Uma das fotos não pôde ser lida.', true); }
   }
   renderFotosE();
 });
@@ -1879,6 +1904,7 @@ document.getElementById('descartaEnt').addEventListener('click', () => {
   const b = document.getElementById('descartaEnt');
   if (!confirmaDescartaE) { confirmaDescartaE = true; b.textContent = 'Toque de novo para remover'; return; }
   eEst = {ativo: false, itens: {}, fotos: []}; mostraEnt(false, null);
+  sujoSalvar = !!(listaV.find(x => x.id === editandoV) || {}).ent; aplicaTrava();
   mostra(msgV, 'Entrega removida desta tela. Toque em Salvar vistoria para confirmar.', false);
 });
 
@@ -1890,9 +1916,7 @@ function renderSegsV(){
 function renderItensV(){
   document.getElementById('vItens').innerHTML = ITENS_V.map((n, i) => { const e = vEst.itens[n] || ''; return `<div class="ckv"><span>${esc(n)}</span><button type="button" class="ckb ${e}" data-item="${i}">${e || '—'}</button></div>`; }).join('');
 }
-function renderFotosV(){
-  document.getElementById('vFotos').innerHTML = vEst.fotos.map((f, i) => `<div class="fotov"><img src="${f.mini || f.img}" alt="Foto ${i + 1}"><div><input type="text" placeholder="Legenda (ex.: lateral direita)" value="${esc(f.leg || '')}" data-leg="${i}"><button class="btn mini perigo" type="button" data-rmfoto="${i}">Remover foto</button></div></div>`).join('');
-}
+function renderFotosV(){ document.getElementById('vFotos').innerHTML = htmlFotos(vEst.fotos, '', 'V'); }
 formV.addEventListener('click', e => {
   const sg = e.target.closest('button[data-seg]');
   if (sg) { const c = sg.dataset.seg; vEst[c] = vEst[c] === sg.dataset.val ? '' : sg.dataset.val; renderSegsV(); return; }
@@ -1923,16 +1947,76 @@ function reduzFoto(file, lado = 1100, qual = 0.68, carimbo = null){
     im.src = url;
   });
 }
-document.getElementById('vAddFoto').addEventListener('click', () => document.getElementById('vFotoIn').click());
 document.getElementById('vFotoIn').addEventListener('change', async e => {
   const arqs = [...e.target.files]; e.target.value = '';
   const lote = await loteCarimbo(arqs, msgV);
   for (const f of arqs) {
-    if (vEst.fotos.length >= 20) { mostra(msgV, 'Limite de 20 fotos por vistoria.', true); break; }
-    try { vEst.fotos.push(await reduzFoto(f, 1100, 0.68, carimboDe(f, lote))); } catch (_) { mostra(msgV, 'Uma das fotos não pôde ser lida.', true); }
+    if (vEst.fotos.length >= LIM_FOTOS) { mostra(msgV, 'Limite de ' + LIM_FOTOS + ' fotos por etapa.', true); break; }
+    try { const ft = await reduzFoto(f, 1100, 0.68, carimboDe(f, lote)); ft.pos = alvoFoto.V; if (ft.pos) ft.leg = nomePos(ft.pos); vEst.fotos.push(ft); } catch (_) { mostra(msgV, 'Uma das fotos não pôde ser lida.', true); }
   }
   renderFotosV();
 });
+
+/* ---------- fotos por posição ---------- */
+const FOTO_POS = [['dianteira', 'Dianteira'], ['latEsq', 'Lateral esquerda'], ['traseira', 'Traseira'], ['latDir', 'Lateral direita'], ['painel', 'Painel'], ['bateria', 'Bateria'], ['porta', 'Porta-malas / estepe']];
+const LIM_FOTOS = 30;
+const nomePos = k => (FOTO_POS.find(p => p[0] === k) || [0, ''])[1];
+const alvoFoto = {V: '', E: ''};
+function htmlFotos(lista, suf, st){
+  const idx = lista.map((f, i) => ({f, i}));
+  const cab = (nome, n, pos, rotulo) => `<div class="cab"><div><b>${esc(nome)}</b><div class="est">${n ? n + (n === 1 ? ' foto' : ' fotos') : 'Sem foto'}</div></div><button class="btn mini sec edita" type="button" data-addfoto="${pos}" data-st="${st}">${rotulo}</button></div>`;
+  const slots = FOTO_POS.map(([k, nome]) => {
+    const g = idx.filter(o => o.f.pos === k);
+    return `<div class="slot${g.length ? ' tem' : ''}">${cab(nome, g.length, k, g.length ? 'Adicionar mais' : 'Adicionar foto')}${g.length ? `<div class="mins">${g.map((o, j) => `<div class="min"><img src="${o.f.mini || o.f.img}" alt="${esc(nome)} ${j + 1}"><button type="button" class="edita" aria-label="Remover foto" data-rmfoto${suf}="${o.i}">×</button></div>`).join('')}</div>` : ''}</div>`;
+  }).join('');
+  const livres = idx.filter(o => !FOTO_POS.some(p => p[0] === o.f.pos));
+  const outras = `<div class="slot${livres.length ? ' tem' : ''}">${cab('Outras fotos / avarias', livres.length, '', 'Adicionar foto')}${livres.map(o => `<div class="fotov"><img src="${o.f.mini || o.f.img}" alt="Foto ${o.i + 1}"><div><input type="text" placeholder="Legenda (ex.: arranhão na porta)" value="${esc(o.f.leg || '')}" data-leg${suf}="${o.i}"><button class="btn mini perigo edita" type="button" data-rmfoto${suf}="${o.i}">Remover foto</button></div></div>`).join('')}</div>`;
+  return slots + outras;
+}
+formV.addEventListener('click', e => {
+  const b = e.target.closest('button[data-addfoto]'); if (!b) return;
+  alvoFoto[b.dataset.st] = b.dataset.addfoto;
+  document.getElementById(b.dataset.st === 'V' ? 'vFotoIn' : 'eFotoIn').click();
+});
+function fotosOrdenadas(lista){
+  const com = (lista || []).filter(f => f.img), out = [];
+  FOTO_POS.forEach(([k, nome]) => { const g = com.filter(f => f.pos === k); g.forEach((f, i) => out.push({...f, leg: nome + (g.length > 1 ? ' (' + (i + 1) + '/' + g.length + ')' : '')})); });
+  com.filter(f => !FOTO_POS.some(p => p[0] === f.pos)).forEach(f => out.push(f));
+  return out;
+}
+
+/* ---------- bloqueio depois de salvar ---------- */
+let travaRet = false, travaEnt = false, sujoSalvar = false, confirmaReabre = '';
+function aplicaTrava(){
+  const entAtiva = eEst.ativo, tudo = travaRet && (!entAtiva || travaEnt);
+  document.getElementById('fsRet').disabled = travaRet;
+  document.getElementById('fsEnt').disabled = travaEnt;
+  confirmaReabre = '';
+  document.getElementById('reabreRet').textContent = 'Reabrir retirada para correção';
+  document.getElementById('reabreEnt').textContent = 'Reabrir entrega para correção';
+  document.getElementById('reabreRet').hidden = !travaRet;
+  document.getElementById('reabreEnt').hidden = !(entAtiva && travaEnt);
+  document.getElementById('avisoTrava').hidden = !(travaRet || (entAtiva && travaEnt));
+  document.getElementById('txtTrava').textContent = tudo && entAtiva ? 'Vistoria e entrega salvas e bloqueadas. Dá para gerar o PDF.'
+    : travaRet && !entAtiva ? 'Vistoria salva e bloqueada para edição. Dá para gerar o PDF ou registrar a entrega.'
+    : travaRet ? 'Retirada salva e bloqueada. Complete a entrega abaixo.' : 'Entrega salva e bloqueada.';
+  document.getElementById('salvaV').hidden = tudo && !sujoSalvar;
+  document.getElementById('tituloFormV').textContent = editandoV === null ? 'Nova vistoria' : (travaRet ? 'Vistoria salva' : 'Corrigir vistoria');
+}
+async function reabre(parte){
+  const rb = document.getElementById(parte === 'retirada' ? 'reabreRet' : 'reabreEnt');
+  if (confirmaReabre !== parte) { confirmaReabre = parte; rb.textContent = 'Toque de novo para reabrir'; mostra(msgV, 'Reabrir libera a edição e registra a data da correção na vistoria.', true); return; }
+  const v = listaV.find(x => x.id === editandoV);
+  if (v) {
+    v.reaberturas = (v.reaberturas || []).concat({em: new Date().toISOString(), parte});
+    try { await gravaV(v); } catch (_) { mostra(msgV, 'Não foi possível reabrir. Tente de novo.', true); return; }
+  }
+  if (parte === 'retirada') travaRet = false; else travaEnt = false;
+  aplicaTrava();
+  mostra(msgV, 'Edição liberada. Toque em Salvar vistoria quando terminar.', false);
+}
+document.getElementById('reabreRet').addEventListener('click', () => reabre('retirada'));
+document.getElementById('reabreEnt').addEventListener('click', () => reabre('entrega'));
 
 const proximoNumeroV = () => { const n = listaV.map(v => parseInt(v.numero, 10)).filter(Number.isFinite); return String((n.length ? Math.max(...n) : 0) + 1); };
 
@@ -1955,6 +2039,7 @@ let abreFormV = function(v){
   eEst = {ativo: false, itens: {...((ent && ent.itens) || {})}, fotos: ((ent && ent.fotos) || []).map(f => ({...f})), marcas: ((ent && ent.marcas) || []).map(m => ({...m}))};
   Object.entries(EF).forEach(([k, id]) => { document.getElementById(id).value = (ent && ent[k]) || ''; });
   mostraEnt(!!ent, ent);
+  travaRet = !!v; travaEnt = !!ent; sujoSalvar = false; aplicaTrava();
   formV.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 ;
@@ -1965,7 +2050,7 @@ function coletaV(){
   const v = {id: editandoV || 'v' + novoId(), criado: prev.criado || Date.now()};
   CHAVES_V.forEach(k => { v[k] = document.getElementById('v_' + k).value.trim(); });
   v.placa = v.placa.toUpperCase();
-  v.pdfEm = prev.pdfEm; v.fotosLimpas = prev.fotosLimpas;
+  v.pdfEm = prev.pdfEm; v.fotosLimpas = prev.fotosLimpas; v.reaberturas = prev.reaberturas;
   Object.assign(v, {motivo: vEst.motivo, plat: document.getElementById('vPlat').checked, comb: vEst.comb, pneus: vEst.pneus,
                     itens: vEst.itens, fotos: vEst.fotos, marcas: vEst.marcas || [], assCli: padCli.dados(), assMot: padMot.dados()});
   v.assEm = (v.assCli || v.assMot) ? (prev.assEm || new Date().toISOString()) : '';
@@ -1987,6 +2072,7 @@ async function salvaV(){
   document.getElementById('tituloFormV').textContent = 'Editar vistoria';
   document.getElementById('excluiV').hidden = false;
   document.getElementById('blocoEnt').hidden = false;
+  travaRet = true; if (eEst.ativo) travaEnt = true; sujoSalvar = false; aplicaTrava();
   return v;
 }
 
@@ -2055,7 +2141,7 @@ function montaPDF(v){
     y += 38;
   };
   const fotosPDF = (titulo, lista) => {
-    lista = lista.filter(f => f.img);
+    lista = fotosOrdenadas(lista);
     if (!lista.length) return;
     d.addPage(); y = 12;
     d.setFont('helvetica', 'bold'); d.setFontSize(11); d.setTextColor(0); d.text(titulo, M, y); y += 6;
@@ -2117,6 +2203,7 @@ function montaPDF(v){
   d.text(t, M, y); y += t.length * 3.6 + 3;
   assina([[A, 'Cliente / responsável', v.nomeCli, v.rgCli, v.assCli], [B, 'Motorista', v.nomeMot, v.rgMot, v.assMot]]);
   if (v.assEm) { d.setFontSize(7); d.setTextColor(110); d.text('Assinado em ' + new Date(v.assEm).toLocaleString('pt-BR'), M, y); y += 4; }
+  if ((v.reaberturas || []).length) { const rt = d.splitTextToSize('Reaberta para correção em: ' + v.reaberturas.map(r => new Date(r.em).toLocaleString('pt-BR') + ' (' + r.parte + ')').join('; '), W - 2 * M); nova(rt.length * 3.4 + 2); d.setFont('helvetica', 'normal'); d.setFontSize(7); d.setTextColor(110); d.text(rt, M, y); y += rt.length * 3.4 + 1; }
   if (v.fotosLimpas) { d.setFontSize(7); d.setTextColor(110); d.text('Fotos originais removidas do aparelho para liberar espaço.', M, y); y += 4; }
 
   fotosPDF(v.ent ? 'FOTOS DA RETIRADA' : 'FOTOS DO VEÍCULO', v.fotos || []);
@@ -2194,9 +2281,13 @@ document.getElementById('cancelaV').addEventListener('click', fechaFormV);
 document.getElementById('salvaV').addEventListener('click', async () => {
   const v = await salvaV(); if (!v) return;
   const falta = [!v.atend && 'o endereço de atendimento', !v.dest && 'o endereço de destino'].filter(Boolean);
-  mostra(msgV, 'Vistoria salva.' + (falta.length ? ' Atenção: falta ' + falta.join(' e ') + ' (a seguradora exige).' : ''), falta.length > 0);
+  mostra(msgV, 'Vistoria salva e bloqueada para edição.' + (falta.length ? ' Atenção: falta ' + falta.join(' e ') + ' (a seguradora exige). Use Reabrir retirada para completar.' : ''), falta.length > 0);
 });
-document.getElementById('pdfV').addEventListener('click', async () => { const v = await salvaV(); if (v) exportaPDF(v, msgV); });
+document.getElementById('pdfV').addEventListener('click', async () => {
+  const tudo = editandoV !== null && travaRet && (!eEst.ativo || travaEnt) && !sujoSalvar;
+  const v = tudo ? listaV.find(x => x.id === editandoV) : await salvaV();
+  if (v) exportaPDF(v, msgV);
+});
 document.getElementById('excluiV').addEventListener('click', async () => {
   const btn = document.getElementById('excluiV');
   if (!confirmaExclusaoV) { confirmaExclusaoV = true; btn.textContent = 'Toque de novo para excluir'; mostra(msgV, 'Confirme para excluir esta vistoria e as fotos.', true); return; }
@@ -2687,30 +2778,46 @@ document.getElementById('excluiVe').addEventListener('click', () => {
 
 /* ---------- motoristas cadastrados (assinatura guardada uma vez) ---------- */
 const motoristasM = () => Array.isArray(NOVOS.motoristas) ? NOVOS.motoristas : (NOVOS.motoristas = []);
-const selMot = document.getElementById('vMotSel');
+const selMot = document.getElementById('vMotSel'), selMotE = document.getElementById('vMotSelE');
+const idMotPorNome = nome => { const n = (nome || '').trim().toLowerCase(); const m = n && motoristasM().find(x => (x.nome || '').trim().toLowerCase() === n); return m ? m.id : ''; };
+function renderMotSelE(valor){
+  const atual = valor !== undefined ? valor : selMotE.value;
+  selMotE.innerHTML = '<option value="">- escolher -</option>' + motoristasM().map(m => `<option value="${esc(m.id)}">${esc(m.nome)}</option>`).join('');
+  selMotE.value = motoristasM().some(m => m.id === atual) ? atual : '';
+}
 let editandoMot = null, confirmaExclusaoMot = false;
 function renderMotSel(valor){
   const atual = valor !== undefined ? valor : selMot.value;
   selMot.innerHTML = '<option value="">- escolher -</option>' + motoristasM().map(m => `<option value="${esc(m.id)}">${esc(m.nome)}</option>`).join('');
   selMot.value = motoristasM().some(m => m.id === atual) ? atual : '';
+  renderMotSelE();
 }
 function aplicaMotorista(id, alvo){
   const m = motoristasM().find(x => x.id === id); if (!m) return;
-  if (alvo !== 'ent') { document.getElementById('v_nomeMot').value = m.nome || ''; document.getElementById('v_rgMot').value = m.doc || ''; padMot.ajusta(m.ass); }
-  if (alvo !== 'ret' && eEst.ativo) { document.getElementById('v_nomeMotE').value = m.nome || ''; document.getElementById('v_docMotE').value = m.doc || ''; padMotE.ajusta(m.ass); }
-  try { localStorage.setItem('motUltimo', id); } catch (_) {}
+  if (alvo === 'ret') { document.getElementById('v_nomeMot').value = m.nome || ''; document.getElementById('v_rgMot').value = m.doc || ''; padMot.ajusta(m.ass); try { localStorage.setItem('motUltimo', id); } catch (_) {} }
+  if (alvo === 'ent' && eEst.ativo) { document.getElementById('v_nomeMotE').value = m.nome || ''; document.getElementById('v_docMotE').value = m.doc || ''; padMotE.ajusta(m.ass); }
 }
-selMot.addEventListener('change', () => { if (selMot.value) aplicaMotorista(selMot.value, 'ambos'); });
+selMot.addEventListener('change', () => { if (selMot.value) aplicaMotorista(selMot.value, 'ret'); });
+selMotE.addEventListener('change', () => { if (selMotE.value) aplicaMotorista(selMotE.value, 'ent'); });
 /* vistoria nova: já abre com o último motorista (ou o único cadastrado) */
 const abreFormV_orig = abreFormV;
 abreFormV = function(v){
   abreFormV_orig(v);
   let pre = '';
   if (!v) { try { pre = localStorage.getItem('motUltimo') || ''; } catch (_) {} if (!motoristasM().some(m => m.id === pre)) pre = motoristasM().length === 1 ? motoristasM()[0].id : ''; }
-  renderMotSel(pre);
+  renderMotSel(v ? idMotPorNome(v.nomeMot) : pre);
   if (pre) aplicaMotorista(pre, 'ret');
+  renderMotSelE(v && v.ent ? idMotPorNome(v.ent.nomeMot) : '');
 };
-document.getElementById('abreEnt').addEventListener('click', () => { if (selMot.value) aplicaMotorista(selMot.value, 'ent'); });
+/* entrega: começa com o motorista da retirada (pode trocar sem mexer na retirada) */
+document.getElementById('abreEnt').addEventListener('click', () => {
+  const rec = listaV.find(x => x.id === editandoV) || {};
+  const nome = document.getElementById('v_nomeMot').value;
+  document.getElementById('v_nomeMotE').value = nome;
+  document.getElementById('v_docMotE').value = document.getElementById('v_rgMot').value;
+  padMotE.ajusta(rec.assMot || padMot.dados());
+  renderMotSelE(idMotPorNome(nome));
+});
 
 const formMot = document.getElementById('formMot'), msgMot = document.getElementById('msgMot');
 const padMotCad = criaPad(document.getElementById('padMotCad'));
