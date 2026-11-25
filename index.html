@@ -420,6 +420,7 @@ img[data-zoom],img[data-zoomid]{cursor:zoom-in}
     <button class="btn sec" id="abreFormP" type="button">Ficha em papel (só fotos)</button>
     <div class="form" id="formV" hidden>
       <h2 class="titulo-form" id="tituloFormV">Nova vistoria</h2>
+      <datalist id="listaMarcas"></datalist>
       <div class="travado" id="avisoTrava" hidden>
         <div id="txtTrava"></div>
         <div class="acoes"><button class="btn mini sec" id="reabreRet" type="button" hidden>Reabrir retirada para correção</button><button class="btn mini sec" id="reabreEnt" type="button" hidden>Reabrir entrega para correção</button></div>
@@ -1014,6 +1015,17 @@ elTipo.addEventListener('change', () => {
 });
 document.getElementById('sRecebi').addEventListener('change', atualizaDica);
 
+const MARCAS_BASE = ['Chevrolet','Fiat','Ford','Honda','Hyundai','Jeep','Nissan','Renault','Toyota','Volkswagen','Citroën','Peugeot','Mitsubishi','Kia','BMW','Mercedes-Benz','Audi','Volvo','Land Rover','Chery','JAC','Suzuki','Yamaha','Kawasaki','Harley-Davidson'];
+function marcasConhecidas(){
+  const out = [...MARCAS_BASE], tem = new Set(out.map(m => m.toLowerCase()));
+  const add = m => { m = (m || '').trim(); if (m && !tem.has(m.toLowerCase())) { tem.add(m.toLowerCase()); out.push(m); } };
+  [...BASE.servicos, ...NOVOS.servicos].forEach(x => add(NOVOS.ajustes[x.id]?.marca ?? x.marca));
+  (typeof listaV !== 'undefined' ? listaV : []).forEach(v => add(v.marca));
+  return out;
+}
+function atualizaMarcas(){
+  document.getElementById('listaMarcas').innerHTML = marcasConhecidas().sort((a, b) => a.localeCompare(b, 'pt-BR')).map(m => `<option value="${esc(m)}">`).join('');
+}
 function atualizaCias(){
   const set = new Set();
   [...BASE.servicos, ...NOVOS.servicos].forEach(x => { const c = (NOVOS.ajustes[x.id]?.cia ?? x.cia); if (c) set.add(c); });
@@ -1836,10 +1848,10 @@ const SEGS_V = {vMotivo: ['motivo', ['Acidente','Roubo/Furto','Pane','Combustív
                 vPneus: ['pneus', ['Novos','Bons','Ruins']]};
 const LINHAS_V = [[['numero','Nº','text'],['data','Data','date']], [['hora','Hora','time'],['atendente','Atendente','text']],
   [['cia','Seguradora / Cia','text']], [['assist','Assistência','text']], [['prop','Proprietário','text'],['tel','Telefone','tel']],
-  [['veic','Veículo','text']], [['ano','Ano','text'],['cor','Cor','text']], [['placa','Placa','text'],['km','KM do veículo','text']],
+  [['marca','Marca','text'],['modelo','Modelo','text']], [['ano','Ano','text'],['cor','Cor','text']], [['placa','Placa','text'],['km','KM do veículo','text']],
   [['atend','Local de atendimento (endereço)','text']], [['cidadeSaida','Cidade de saída (opcional)','text']], [['dest','Destino (endereço)','text']], [['cidadeDest','Cidade de destino (opcional)','text']], [['kmSaida','Km saída','text'],['kmChegada','Km chegada','text']]];
 const CHAVES_V = LINHAS_V.flat().map(c => c[0]).concat(['obs','nomeCli','rgCli','nomeMot','rgMot']);
-const campoV = ([k, nome, tipo]) => `<div><label for="v_${k}">${nome}</label><input id="v_${k}" type="${tipo}"${k === 'cia' ? ' list="listaCias" autocomplete="off"' : (k === 'cidadeSaida' || k === 'cidadeDest') ? ' list="listaCidades" autocomplete="off"' : ''}${k === 'placa' ? ' autocapitalize="characters"' : ''}></div>`;
+const campoV = ([k, nome, tipo]) => `<div><label for="v_${k}">${nome}</label><input id="v_${k}" type="${tipo}"${k === 'cia' ? ' list="listaCias" autocomplete="off"' : (k === 'cidadeSaida' || k === 'cidadeDest') ? ' list="listaCidades" autocomplete="off"' : ''}${k === 'placa' ? ' autocapitalize="characters"' : ''}${k === 'marca' ? ' list="listaMarcas" autocomplete="off"' : ''}></div>`;
 document.getElementById('vCampos').innerHTML = LINHAS_V.map(l => l.length > 1 ? `<div class="grid2">${l.map(campoV).join('')}</div>` : campoV(l[0])).join('');
 
 /* banco próprio (IndexedDB): fotos ocupam espaço demais para o armazenamento normal */
@@ -2131,6 +2143,8 @@ let abreFormV = function(v){
   editandoV = v ? v.id : null; confirmaExclusaoV = false;
   const base = v || {numero: proximoNumeroV(), data: hoje(), hora: new Date().toTimeString().slice(0, 5)};
   CHAVES_V.forEach(k => { document.getElementById('v_' + k).value = base[k] || ''; });
+  if (!('marca' in base) && !('modelo' in base)) document.getElementById('v_modelo').value = base.veic || '';
+  atualizaMarcas();
   vEst = {itens: {...(base.itens || {})}, motivo: base.motivo || '', comb: base.comb || '', pneus: base.pneus || '', fotos: (base.fotos || []).map(f => ({...f})), marcas: (base.marcas || []).map(m => ({...m}))};
   document.getElementById('vPlat').checked = !!base.plat;
   renderSegsV(); renderItensV(); renderFotosV(); renderCarro('V');
@@ -2156,6 +2170,8 @@ function coletaV(){
   const v = {id: editandoV || 'v' + novoId(), criado: prev.criado || Date.now()};
   CHAVES_V.forEach(k => { v[k] = document.getElementById('v_' + k).value.trim(); });
   v.placa = v.placa.toUpperCase();
+  const mc = marcasConhecidas().find(m => m.toLowerCase() === v.marca.toLowerCase()); if (mc) { v.marca = mc; document.getElementById('v_marca').value = mc; }
+  v.veic = [v.marca, v.modelo].filter(Boolean).join(' ');
   v.pdfEm = prev.pdfEm; v.fotosLimpas = prev.fotosLimpas; v.reaberturas = prev.reaberturas;
   Object.assign(v, {motivo: vEst.motivo, plat: document.getElementById('vPlat').checked, comb: vEst.comb, pneus: vEst.pneus,
                     itens: vEst.itens, fotos: vEst.fotos, marcas: vEst.marcas || [], assCli: padCli.dados(), assMot: padMot.dados()});
@@ -2688,7 +2704,7 @@ function atualizaCidades(){
 document.getElementById('criaServV').addEventListener('click', () => {
   const g = k => document.getElementById('v_' + k).value.trim(), cia = g('cia');
   document.querySelector('[data-tab="serv"]').click();
-  abreForm({id: null, data: g('data') || hoje(), veiculo: g('veic'), saida: g('cidadeSaida'), destino: g('cidadeDest'),
+  abreForm({id: null, data: g('data') || hoje(), marca: g('marca'), veiculo: g('modelo'), saida: g('cidadeSaida'), destino: g('cidadeDest'),
             tipo: cia ? 'Seguro' : 'Particular', cia, obs: [g('placa') && 'Placa ' + g('placa'), g('numero') && 'Vistoria nº ' + g('numero')].filter(Boolean).join(' · ')});
   document.getElementById('tituloFormS').textContent = 'Novo serviço';
   document.getElementById('salvaS').textContent = 'Salvar serviço';
