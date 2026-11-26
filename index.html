@@ -174,6 +174,7 @@ img[data-zoom],img[data-zoomid]{cursor:zoom-in}
 .comp .tot b{font-size:24px}
 .maparesp{font-size:14px;line-height:1.4;margin:8px 2px 0;color:var(--mute)}
 .maparesp.erro{color:#B3412E;font-weight:600}
+.sub a{color:var(--green);font-weight:600}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -297,8 +298,9 @@ img[data-zoom],img[data-zoomid]{cursor:zoom-in}
       <p class="dica" id="numO"></p>
       <div class="grid2">
         <div><label for="o_cliente">Cliente</label><input id="o_cliente" type="text"></div>
-        <div><label for="o_tel">Telefone</label><input id="o_tel" type="tel"></div>
+        <div><label for="o_tel">Telefone (com DDD)</label><input id="o_tel" type="tel" inputmode="tel" placeholder="(14) 99999-9999"></div>
       </div>
+      <button class="btn mini ok" id="zapO" type="button" hidden>Abrir WhatsApp com o orçamento</button>
       <div class="grid2">
         <div><label for="o_marca">Marca</label><input id="o_marca" type="text" list="listaMarcas" autocomplete="off"></div>
         <div><label for="o_modelo">Modelo</label><input id="o_modelo" type="text"></div>
@@ -314,6 +316,7 @@ img[data-zoom],img[data-zoomid]{cursor:zoom-in}
       <label for="o_cidDest">Cidade de destino</label>
       <input id="o_cidDest" type="text" list="listaCidades" autocomplete="off">
       <button class="btn sec" id="calcKmO" type="button">Calcular km pelo mapa</button>
+      <button class="btn sec" id="mapsO" type="button">Abrir rota no Google Maps</button>
       <p class="maparesp" id="mapaO" role="status"></p>
       <div class="grid3">
         <div><label for="o_km1">Base → cliente (km)</label><input id="o_km1" type="number" inputmode="decimal" step="0.1" min="0"></div>
@@ -623,6 +626,7 @@ img[data-zoom],img[data-zoomid]{cursor:zoom-in}
       </div>
       <button class="btn" id="salvaV" type="button">Salvar vistoria</button>
       <button class="btn ok" id="pdfV" type="button">Gerar PDF para o cliente</button>
+      <button class="btn sec" id="zapV" type="button" hidden>WhatsApp do proprietário</button>
       <button class="btn sec" id="criaServV" type="button">Criar serviço com estes dados</button>
       <button class="btn sec" id="gerarOrcV" type="button">Gerar orçamento com estes dados</button>
       <button class="btn sec" id="cancelaV" type="button">Fechar</button>
@@ -2232,6 +2236,7 @@ function aplicaTrava(){
     : travaRet && !entAtiva ? 'Vistoria salva e bloqueada para edição. Dá para gerar o PDF ou registrar a entrega.'
     : travaRet ? 'Retirada salva e bloqueada. Complete a entrega abaixo.' : 'Entrega salva e bloqueada.';
   document.getElementById('salvaV').hidden = tudo && !sujoSalvar;
+  atualizaZapV();
   document.getElementById('tituloFormV').textContent = editandoV === null ? 'Nova vistoria' : (travaRet ? 'Vistoria salva' : 'Corrigir vistoria');
 }
 async function reabre(parte){
@@ -2300,6 +2305,8 @@ function coletaV(){
 async function salvaV(){
   const v = coletaV();
   if (!v.placa && !v.veic) { mostra(msgV, 'Informe o veículo ou a placa.', true); return null; }
+  const tv = validaTel(v.tel); if (!tv.ok) { mostra(msgV, MSG_TEL, true); return null; }
+  if (tv.fmt) { v.tel = tv.fmt; document.getElementById('v_tel').value = tv.fmt; }
   try { await gravaV(v); } catch (_) { mostra(msgV, 'Não foi possível salvar. Tente com menos fotos.', true); return null; }
   editandoV = v.id;
   listaV = listaV.filter(x => x.id !== v.id).concat(v);
@@ -2316,7 +2323,7 @@ const cardV = v => v.tipo === 'papel' ? cardP(v) : `
     <div class="top"><span>Nº ${esc(v.numero) || '-'} · ${dt(v.data)}</span><span class="etq ${v.assCli ? 'pago' : 'aberto'}">${v.assCli ? 'Assinada' : 'Sem assinatura'}</span></div>
     <div class="vcorpo">${(v.fotos || [])[0] ? `<img class="thumbv" src="${v.fotos[0].mini || v.fotos[0].img}" alt="Ampliar fotos" data-zoomid="${esc(v.id)}">` : ''}<div>
       <div class="title">${esc(v.veic) || 'Veículo'} ${esc(v.placa)}</div>
-      <div class="sub">${esc(v.cia) || 'Particular'}${v.prop ? ' · ' + esc(v.prop) : ''}</div>
+      <div class="sub">${esc(v.cia) || 'Particular'}${v.prop ? ' · ' + esc(v.prop) : ''}${v.tel ? ' · ' + linkTel(v.tel) : ''}</div>
       <div class="sub">${(v.fotos || []).length} foto(s)${v.ent ? ' · entregue' + (v.ent.assRec ? ' e assinada' : '') : ''}</div>
     </div></div>
     <div class="acoes"><button class="btn mini sec" type="button" data-abrir-v="${esc(v.id)}">Abrir</button><button class="btn mini ok" type="button" data-pdf-v="${esc(v.id)}">PDF</button><button class="btn mini perigo" type="button" data-del-v="${esc(v.id)}">${excluiPendV === v.id ? 'Toque de novo para excluir' : 'Excluir'}</button></div>
@@ -2557,7 +2564,7 @@ function cardP(v){
     <div class="top"><span>Nº ${esc(v.numero) || '-'} · ${dt(v.data)}</span><span class="etq aberto">Papel</span></div>
     <div class="vcorpo">${f ? `<img class="thumbv" src="${f.mini || f.img}" alt="Ampliar fotos" data-zoomid="${esc(v.id)}">` : ''}<div>
       <div class="title">${esc(v.veic) || 'Veículo'} ${esc(v.placa)}</div>
-      <div class="sub">${esc(v.cia) || 'Particular'}${v.prop ? ' · ' + esc(v.prop) : ''}</div>
+      <div class="sub">${esc(v.cia) || 'Particular'}${v.prop ? ' · ' + esc(v.prop) : ''}${v.tel ? ' · ' + linkTel(v.tel) : ''}</div>
       <div class="sub">${(v.fotos || []).length} foto(s) da ficha${v.fotosLimpas ? ' · fotos limpas' : ''}</div>
     </div></div>
     <div class="acoes"><button class="btn mini sec" type="button" data-abrir-v="${esc(v.id)}">Abrir</button><button class="btn mini ok" type="button" data-pdf-v="${esc(v.id)}">PDF</button><button class="btn mini perigo" type="button" data-del-v="${esc(v.id)}">${excluiPendV === v.id ? 'Toque de novo para excluir' : 'Excluir'}</button></div>
@@ -2825,6 +2832,35 @@ document.getElementById('criaServV').addEventListener('click', () => {
   document.getElementById('excluiS').hidden = true;
 });
 
+
+/* ---------- telefone, WhatsApp e endereço ---------- */
+const MSG_TEL = 'Telefone sem DDD ou incompleto. Use DDD + número, por exemplo (14) 99833-5453.';
+function validaTel(str){
+  const t = (str || '').trim(); if (!t) return {vazio: true, ok: true};
+  const dig = t.replace(/\D/g, '');
+  if (t.startsWith('+') && !t.startsWith('+55')) return dig.length >= 8 && dig.length <= 15 ? {ok: true, zap: dig, fmt: t} : {ok: false};
+  let n = dig; if (n.length >= 12 && n.startsWith('55')) n = n.slice(2);
+  if (!/^[1-9][1-9]/.test(n)) return {ok: false};
+  if (n.length === 11 && n[2] === '9') return {ok: true, zap: '55' + n, fmt: '(' + n.slice(0, 2) + ') ' + n.slice(2, 7) + '-' + n.slice(7)};
+  if (n.length === 10 && /[2-5]/.test(n[2])) return {ok: true, zap: '55' + n, fmt: '(' + n.slice(0, 2) + ') ' + n.slice(2, 6) + '-' + n.slice(6)};
+  return {ok: false};
+}
+const linkZap = (zap, texto) => 'https://wa.me/' + zap + (texto ? '?text=' + encodeURIComponent(texto) : '');
+const linkTel = t => { const r = validaTel(t); return r.zap ? `<a href="${linkZap(r.zap)}" target="_blank" rel="noopener">${esc(r.fmt)}</a>` : esc(t); };
+function abreLink(u){ const a = document.createElement('a'); a.href = u; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove(); }
+const MIN_END = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
+const capEnd = txt => (txt || '').replace(/\S+/g, (w, i) => {
+  if (/\d/.test(w)) return w;
+  const b = w.toLowerCase();
+  if (i > 0 && MIN_END.has(b)) return b;
+  if (w.length <= 2 && w === w.toUpperCase()) return w;
+  return b.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('-');
+});
+function atualizaZapV(){ const z = document.getElementById('zapV'), t = document.getElementById('v_tel'); if (z && t) z.hidden = !validaTel(t.value).zap; }
+document.getElementById('v_tel').addEventListener('input', atualizaZapV);
+document.getElementById('v_tel').addEventListener('change', () => { const r = validaTel(document.getElementById('v_tel').value); if (r.vazio) return; if (r.ok) { document.getElementById('v_tel').value = r.fmt; mostra(msgV, '', false); } else mostra(msgV, MSG_TEL, true); atualizaZapV(); });
+document.getElementById('zapV').addEventListener('click', () => { const r = validaTel(document.getElementById('v_tel').value); if (r.zap) abreLink(linkZap(r.zap)); });
+
 /* ---------- orçamento (clientes particulares) ---------- */
 const PRECOS_PADRAO = {saida: 170, franquia: 40, valorKm: 3.3, pctNoturno: 10, pctFeriado: 10, validadeDias: 7, base: 'Rua Praia das Grutas, 30, Balneário Samburá, Ilha Comprida'};
 const EMPRESA = {nome: 'Facerolli Guinchos', razao: 'Emerson Rogério Facerolli', cnpj: '28.173.255/0001-75', rua: 'Rua Praia das Grutas, 30', cidade: 'Balneário Samburá - Ilha Comprida', tel: '(13) 99678-9186', email: 'facerolliguinchos@gmail.com', pix: '28173255000175'};
@@ -2874,6 +2910,7 @@ function poeO(o){
   set('o_obs', o.obs); set('o_valDias', o.validadeDias); set('o_status', o.status || 'pendente');
 }
 function atualizaPreviaO(){
+  gO('zapO').hidden = !validaTel(gO('o_tel').value).zap;
   const o = lerO(), c = calcO(o);
   const lin = (a, b) => `<div class="lin"><span>${a}</span><b>${b}</b></div>`;
   let h = lin('Km do circuito', c.kmTotal + ' km' + (c.exced ? ' (' + c.exced + ' acima da franquia)' : ' (dentro da franquia)'));
@@ -2890,6 +2927,8 @@ function atualizaPreviaO(){
 }
 const camposO = ['o_cliente','o_tel','o_marca','o_modelo','o_placa','o_atend','o_cidSaida','o_dest','o_cidDest','o_km1','o_km2','o_km3','o_saida','o_franq','o_valKm','o_not','o_pctNot','o_fer','o_pctFer','o_ped','o_avVal','o_avDesc','o_desc','o_descTipo','o_descPdf','o_detalhar','o_obs','o_valDias','o_status'];
 camposO.forEach(id => { gO(id).addEventListener('input', atualizaPreviaO); gO(id).addEventListener('change', atualizaPreviaO); });
+gO('o_tel').addEventListener('change', () => { const r = validaTel(gO('o_tel').value); if (r.vazio) return; if (r.ok) { gO('o_tel').value = r.fmt; mostra(gO('msgO'), '', false); } else mostra(gO('msgO'), MSG_TEL, true); atualizaPreviaO(); });
+['o_atend', 'o_dest', 'o_cidSaida', 'o_cidDest'].forEach(id => gO(id).addEventListener('change', () => { gO(id).value = capEnd(gO(id).value.trim()); }));
 
 function preencheTabelaPrecos(){
   const p = precosO();
@@ -2924,6 +2963,9 @@ function abreFormO(o, pre){
 function salvaOrcamento(){
   const msg = gO('msgO'), d = lerO();
   if (!d.cliente && !d.placa && !d.modelo && !d.marca) { mostra(msg, 'Informe o nome do cliente, a placa ou o veículo.', true); return null; }
+  const tv = validaTel(d.tel); if (!tv.ok) { mostra(msg, MSG_TEL, true); return null; }
+  if (tv.fmt) { d.tel = tv.fmt; gO('o_tel').value = tv.fmt; }
+  ['atend', 'dest', 'cidSaida', 'cidDest'].forEach(k => { d[k] = capEnd(d[k]); });
   const mc = marcasConhecidas().find(m => m.toLowerCase() === d.marca.toLowerCase()); if (mc) { d.marca = mc; gO('o_marca').value = mc; }
   const ant = NOVOS.orcamentos.find(x => x.id === editandoO);
   const o = ant ? {...ant, ...d} : {...d, id: 'o' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), numero: Math.max(0, ...NOVOS.orcamentos.map(x => x.numero || 0)) + 1, data: hoje(), criadoEm: Date.now()};
@@ -3038,10 +3080,48 @@ function logoParaPdf(){
   const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0);
   logoPng = {img: c.toDataURL('image/png'), w: c.width, h: c.height}; return logoPng;
 }
+function linhasOrc(o){
+  const c = calcO(o), mostraDet = o.detalhar !== false && !(c.desc && o.descPdf === false), L = [];
+  if (mostraDet) {
+    L.push(['Saída' + (o.franquia ? ' (inclui ' + o.franquia + ' km rodados)' : ''), fmt(o.saida)]);
+    if (c.exced) L.push(['Km excedentes (' + c.exced + ' km × ' + fmt(o.valorKm) + ')', fmt(c.valKm)]);
+    if (c.adicNot) L.push(['Adicional noturno (' + o.pctNot + '%)', fmt(c.adicNot)]);
+    if (c.adicFer) L.push(['Adicional domingo / feriado (' + o.pctFer + '%)', fmt(c.adicFer)]);
+    if (c.avulso) L.push([o.avDesc || 'Adicional', fmt(c.avulso)]);
+    if (c.desc && o.descPdf !== false) L.push(['Desconto' + (o.descTipo === '%' ? ' (' + o.desc + '%)' : ''), '- ' + fmt(c.desc), true]);
+    L.push(c.ped ? ['Pedágios (estimativa)', fmt(c.ped)] : ['Pedágios', 'não incluídos neste valor']);
+  } else {
+    L.push(['Serviço de guincho / remoção do veículo' + (c.ped ? ' (inclui pedágios estimados)' : ''), fmt(c.total)]);
+    if (!c.ped) L.push(['Pedágios', 'não incluídos neste valor']);
+  }
+  return {c, mostraDet, L};
+}
+function textoZapO(o){
+  const {c, L} = linhasOrc(o), ori = capEnd(comCidade(o.atend || '', o.cidSaida)), dst = capEnd(comCidade(o.dest || '', o.cidDest));
+  const out = ['Olá' + (o.cliente ? ', ' + o.cliente : '') + ', aqui é da ' + EMPRESA.nome + '. Segue o orçamento nº ' + numeroO(o.numero) + ':', ''];
+  if (tituloVeicO(o)) out.push('Veículo: ' + tituloVeicO(o) + (o.placa ? ' (' + o.placa + ')' : ''));
+  if (ori) out.push('Atendimento: ' + ori);
+  if (dst) out.push('Destino: ' + dst);
+  out.push('');
+  L.forEach(([t, v]) => out.push(t + ': ' + v));
+  out.push('', '*Total: ' + fmt(c.total) + '*', '', 'Válido até ' + brData(addDias(o.data, o.validadeDias || 7)) + '. Valores sujeitos a alteração caso o trajeto ou os pedágios mudem.', '', 'Pix (CNPJ): ' + EMPRESA.pix + ' (' + EMPRESA.razao + ')');
+  return out.join('\n');
+}
+gO('zapO').addEventListener('click', () => {
+  const o = salvaOrcamento(); if (!o) return;
+  const r = validaTel(o.tel); if (!r.zap) { mostra(gO('msgO'), MSG_TEL, true); return; }
+  abreLink(linkZap(r.zap, textoZapO(o)));
+});
+gO('mapsO').addEventListener('click', () => {
+  const o = lerO(), el = gO('mapaO');
+  if (!o.atend || !o.dest) { el.textContent = 'Preencha o local de atendimento e o destino para abrir a rota.'; el.classList.add('erro'); return; }
+  el.classList.remove('erro');
+  const e = encodeURIComponent, base = precosO().base;
+  abreLink('https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=' + e(base) + '&destination=' + e(base) + '&waypoints=' + e(capEnd(comCidade(o.atend, o.cidSaida))) + '%7C' + e(capEnd(comCidade(o.dest, o.cidDest))));
+  el.textContent = 'Rota aberta no Google Maps. Confira os km e ajuste os campos, se precisar.';
+});
 function montaPDFO(o){
-  const {jsPDF} = window.jspdf, d = new jsPDF({unit: 'mm', format: 'a4'}), W = 210, M = 12, c = calcO(o);
-  const mostraDet = o.detalhar !== false && !(c.desc && o.descPdf === false);
-  const mostraDesc = c.desc && o.descPdf !== false;
+  const {jsPDF} = window.jspdf, d = new jsPDF({unit: 'mm', format: 'a4'}), W = 210, M = 12, {c, L} = linhasOrc(o);
   // faixa preta com logo e dados da empresa
   d.setFillColor(0, 0, 0); d.rect(0, 0, W, 31, 'F');
   const lg = logoParaPdf();
@@ -3063,10 +3143,10 @@ function montaPDFO(o){
     linhas.filter(Boolean).forEach(t => { const L = d.splitTextToSize(t, W - 2 * M); d.text(L, M, y); y += L.length * 4.8; });
     y += 4;
   };
-  bloco('Cliente', [o.cliente || '-', o.tel && 'Telefone: ' + o.tel]);
+  bloco('Cliente', [o.cliente || '-', o.tel && 'Telefone: ' + (validaTel(o.tel).fmt || o.tel)]);
   bloco('Veículo', [tituloVeicO(o) || '-', o.placa && 'Placa: ' + o.placa]);
-  const ori = comCidade(o.atend || '-', o.cidSaida), dst = comCidade(o.dest || '-', o.cidDest);
-  bloco('Trajeto', ['Local de atendimento: ' + ori, 'Destino: ' + dst, mostraDet && c.kmTotal ? 'Distância estimada do circuito (base, cliente, destino e volta): ' + c.kmTotal + ' km' : null]);
+  const ori = capEnd(comCidade(o.atend || '-', o.cidSaida)), dst = capEnd(comCidade(o.dest || '-', o.cidDest));
+  bloco('Trajeto', ['Local de atendimento: ' + ori, 'Destino: ' + dst, linhasOrc(o).mostraDet && c.kmTotal ? 'Distância estimada do circuito (base, cliente, destino e volta): ' + c.kmTotal + ' km' : null]);
   // composição
   d.setFont('helvetica', 'bold'); d.setFontSize(8); d.setTextColor(110); d.text('VALORES', M, y); y += 1.5; d.setDrawColor(190); d.line(M, y, W - M, y); y += 5;
   const linha = (t, v, neg) => {
@@ -3074,17 +3154,7 @@ function montaPDFO(o){
     const L = d.splitTextToSize(t, 135); d.text(L, M, y); d.text(v, W - M, y, {align: 'right'}); y += L.length * 4.8 + 1.4;
     d.setDrawColor(228); d.line(M, y - 3, W - M, y - 3);
   };
-  if (mostraDet) {
-    linha('Saída' + (o.franquia ? ' (inclui ' + o.franquia + ' km rodados)' : ''), fmt(o.saida));
-    if (c.exced) linha('Km excedentes: ' + c.exced + ' km × ' + fmt(o.valorKm), fmt(c.valKm));
-    if (c.adicNot) linha('Adicional noturno (' + o.pctNot + '%)', fmt(c.adicNot));
-    if (c.adicFer) linha('Adicional domingo / feriado (' + o.pctFer + '%)', fmt(c.adicFer));
-    if (c.avulso) linha(o.avDesc || 'Adicional', fmt(c.avulso));
-    if (mostraDesc) linha('Desconto' + (o.descTipo === '%' ? ' (' + o.desc + '%)' : ''), '- ' + fmt(c.desc), true);
-    if (c.ped) linha('Pedágios (estimativa)', fmt(c.ped));
-  } else {
-    linha('Serviço de guincho / remoção do veículo' + (c.ped ? ' (inclui pedágios estimados)' : ''), fmt(c.total));
-  }
+  L.forEach(([t, v, neg]) => linha(t, v, neg));
   y += 2; d.setFillColor(240, 238, 232); d.rect(M, y - 5, W - 2 * M, 13, 'F');
   d.setFont('helvetica', 'bold'); d.setFontSize(13); d.setTextColor(0); d.text('TOTAL', M + 3, y + 3.5); d.setFontSize(16); d.text(fmt(c.total), W - M - 3, y + 4, {align: 'right'}); y += 17;
   if (o.obs) bloco('Observações', [o.obs]);
@@ -3124,7 +3194,7 @@ const cardO = o => {
   <div class="card">
     <div class="top"><span>Nº ${numeroO(o.numero)} · ${dt(o.data)}</span><span class="etq ${cl}">${tx}</span></div>
     <div class="title">${esc(tituloVeicO(o)) || 'Veículo'} ${esc(o.placa)}</div>
-    <div class="sub">${esc(o.cliente) || 'Sem nome'}${o.tel ? ' · ' + esc(o.tel) : ''}</div>
+    <div class="sub">${esc(o.cliente) || 'Sem nome'}${o.tel ? ' · ' + linkTel(o.tel) : ''}</div>
     <div class="sub">${esc(o.cidSaida) || '?'} → ${esc(o.cidDest) || '?'}${c.kmTotal ? ' · ' + c.kmTotal + ' km' : ''}</div>
     <div class="linha-valores"><div><span>Total </span><b>${fmt(c.total)}</b></div></div>
     <div class="acoes"><button class="btn mini sec" type="button" data-abrir-o="${esc(o.id)}">Abrir</button><button class="btn mini ok" type="button" data-pdf-o="${esc(o.id)}">PDF</button><button class="btn mini perigo" type="button" data-del-o="${esc(o.id)}">${excluiPendO === o.id ? 'Toque de novo' : 'Excluir'}</button></div>
