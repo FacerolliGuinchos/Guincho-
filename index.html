@@ -2827,7 +2827,7 @@ document.getElementById('criaServV').addEventListener('click', () => {
 
 /* ---------- orçamento (clientes particulares) ---------- */
 const PRECOS_PADRAO = {saida: 170, franquia: 40, valorKm: 3.3, pctNoturno: 10, pctFeriado: 10, validadeDias: 7, base: 'Rua Praia das Grutas, 30, Balneário Samburá, Ilha Comprida'};
-const EMPRESA = {nome: 'Facerolli Guinchos', cnpj: '28.173.255/0001-75', rua: 'Rua Praia das Grutas, 30', cidade: 'Balneário Samburá - Ilha Comprida', tel: '(13) 99678-9186', email: 'facerolliguinchos@gmail.com', pix: '28173255000175'};
+const EMPRESA = {nome: 'Facerolli Guinchos', razao: 'Emerson Rogério Facerolli', cnpj: '28.173.255/0001-75', rua: 'Rua Praia das Grutas, 30', cidade: 'Balneário Samburá - Ilha Comprida', tel: '(13) 99678-9186', email: 'facerolliguinchos@gmail.com', pix: '28173255000175'};
 const precosO = () => ({...PRECOS_PADRAO, ...(NOVOS.precosOrc || {})});
 const rd2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
 const gO = id => document.getElementById(id);
@@ -3043,14 +3043,14 @@ function montaPDFO(o){
   const mostraDet = o.detalhar !== false && !(c.desc && o.descPdf === false);
   const mostraDesc = c.desc && o.descPdf !== false;
   // faixa preta com logo e dados da empresa
-  d.setFillColor(0, 0, 0); d.rect(0, 0, W, 28, 'F');
+  d.setFillColor(0, 0, 0); d.rect(0, 0, W, 31, 'F');
   const lg = logoParaPdf();
-  if (lg) { const h = 24, w = h * lg.w / lg.h; d.addImage(lg.img, 'PNG', M - 4, 2, Math.min(w, 100), h); }
+  if (lg) { const h = 24, w = h * lg.w / lg.h; d.addImage(lg.img, 'PNG', M - 4, 3.5, Math.min(w, 100), h); }
   d.setTextColor(255); d.setFont('helvetica', 'bold'); d.setFontSize(9);
-  d.text(EMPRESA.nome.toUpperCase(), W - M, 7, {align: 'right'});
+  d.text(EMPRESA.nome.toUpperCase(), W - M, 6.5, {align: 'right'});
   d.setFont('helvetica', 'normal'); d.setFontSize(7.5);
-  ['CNPJ ' + EMPRESA.cnpj, EMPRESA.rua, EMPRESA.cidade, EMPRESA.tel, EMPRESA.email].forEach((t, i) => d.text(t, W - M, 11.5 + i * 3.4, {align: 'right'}));
-  let y = 40;
+  [EMPRESA.razao, 'CNPJ ' + EMPRESA.cnpj, EMPRESA.rua, EMPRESA.cidade, EMPRESA.tel, EMPRESA.email].forEach((t, i) => d.text(t, W - M, 10.8 + i * 3.5, {align: 'right'}));
+  let y = 43;
   d.setTextColor(0); d.setFont('helvetica', 'bold'); d.setFontSize(17); d.text('ORÇAMENTO Nº ' + numeroO(o.numero), M, y);
   d.setFont('helvetica', 'normal'); d.setFontSize(9); d.setTextColor(80);
   d.text('Emitido em ' + brData(o.data), W - M, y - 5, {align: 'right'});
@@ -3091,7 +3091,7 @@ function montaPDFO(o){
   // pix
   d.setDrawColor(150); d.rect(M, y, W - 2 * M, 22);
   d.setFont('helvetica', 'bold'); d.setFontSize(9); d.setTextColor(0); d.text('PAGAMENTO VIA PIX', M + 4, y + 6);
-  d.setFont('helvetica', 'normal'); d.setFontSize(10.5); d.text('Chave Pix (CNPJ): ' + EMPRESA.pix, M + 4, y + 12.5); d.text('Favorecido: ' + EMPRESA.nome, M + 4, y + 18); y += 30;
+  d.setFont('helvetica', 'normal'); d.setFontSize(10.5); d.text('Chave Pix (CNPJ): ' + EMPRESA.pix, M + 4, y + 12.5); d.text('Favorecido: ' + EMPRESA.razao, M + 4, y + 18); y += 30;
   d.setFontSize(8.5); d.setTextColor(90);
   const aviso = d.splitTextToSize('Este orçamento é válido até ' + brData(addDias(o.data, o.validadeDias || 7)) + '. Valores sujeitos a alteração caso o trajeto ou os pedágios mudem.', W - 2 * M);
   d.text(aviso, M, y);
